@@ -37,37 +37,50 @@ export const auth = betterAuth({
   socialProviders: googleProvider,
 
   user: {
+    // Better Auth user collection will be "users"
+    modelName: "users",
+
     additionalFields: {
       role: {
         type: "string",
         required: false,
         defaultValue: "customer",
-        input: true,
+
+        // Users cannot change their role through profile update
+        input: false,
       },
 
       isBlocked: {
         type: "boolean",
         required: false,
         defaultValue: false,
+
+        // Users cannot change their blocked status
         input: false,
       },
 
       businessName: {
         type: "string",
         required: false,
-        input: false,
+
+        // Vendor can update business name
+        input: true,
       },
 
       subscriptionPlan: {
         type: "string",
         required: false,
         defaultValue: "free",
+
+        // Users cannot change subscription
         input: false,
       },
 
       subscriptionExpiresAt: {
         type: "date",
         required: false,
+
+        // Users cannot change subscription expiry
         input: false,
       },
     },
@@ -77,15 +90,41 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user) => {
-          const requestedRole = (user as typeof user & { role?: string }).role;
+          const requestedRole = (
+            user as typeof user & {
+              role?: string;
+            }
+          ).role;
 
           return {
             data: {
               ...user,
+
+              // Only vendor or customer can be assigned here.
+              // Admin must be assigned through a protected
+              // server-side operation.
               role: requestedRole === "vendor" ? "vendor" : "customer",
+
               isBlocked: false,
               subscriptionPlan: "free",
             },
+          };
+        },
+      },
+
+      update: {
+        before: async (user) => {
+          if (
+            "role" in user ||
+            "isBlocked" in user ||
+            "subscriptionPlan" in user ||
+            "subscriptionExpiresAt" in user
+          ) {
+            return false;
+          }
+
+          return {
+            data: user,
           };
         },
       },
