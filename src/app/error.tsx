@@ -1,6 +1,21 @@
+"use client";
+
 import { DashboardChromeStyles } from "@/components/dashboard/dashboard-chrome-styles";
 
-export default function DashboardLoading() {
+export default function DashboardError({
+  error,
+  retry,
+  reset,
+}: {
+  error: unknown;
+  retry: () => void;
+  reset?: () => void;
+}) {
+  const message =
+    error instanceof Error && error.message
+      ? error.message
+      : "Something went wrong while loading this page.";
+
   return (
     <div data-dashboard-shell className="flex min-h-dvh bg-muted/20" aria-busy="true">
       <DashboardChromeStyles />
@@ -13,8 +28,15 @@ export default function DashboardLoading() {
         </div>
       </aside>
       <div className="min-w-0 flex-1">
-        <div className="flex h-16 items-center border-b border-border bg-background px-6">
-          <div className="h-4 w-48 animate-pulse rounded bg-muted" />
+        <div className="flex h-16 items-center justify-between gap-4 border-b border-border bg-background px-6">
+          <p className="truncate text-sm text-muted-foreground">{message}</p>
+          <button
+            type="button"
+            onClick={() => (reset ? reset() : retry())}
+            className="shrink-0 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
+          >
+            Try again
+          </button>
         </div>
         <div className="p-6">
           <div className="h-4 w-32 animate-pulse rounded bg-muted" />
