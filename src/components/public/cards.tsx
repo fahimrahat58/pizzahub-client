@@ -6,6 +6,7 @@ import { Crown, Heart, MapPin, Star, UtensilsCrossed } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api";
 import type { MenuItemDto, RestaurantDto } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -134,6 +135,16 @@ export function PizzaCard({
                 ) : null}
               </div>
             ) : null}
+            {item.vendorName ? (
+              <p className="mt-1 truncate text-xs text-muted-foreground">
+                by <span className="font-medium text-foreground/80">{item.vendorName}</span>
+              </p>
+            ) : null}
+            {item.location ? (
+              <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
+                <MapPin className="size-3 shrink-0" /> {item.location}
+              </p>
+            ) : null}
           </div>
           <span className="shrink-0 font-bold text-orange-500">${item.price.toFixed(2)}</span>
         </div>
@@ -147,6 +158,12 @@ export function PizzaCard({
             {item.ratingAvg.toFixed(1)} ({item.reviewCount})
           </span>
         </div>
+        <Link
+          href={`/menu/${item.id}`}
+          className={cn(buttonVariants({ variant: "outline", size: "sm" }), "mt-2 w-full")}
+        >
+          View Details
+        </Link>
       </div>
     </article>
   );

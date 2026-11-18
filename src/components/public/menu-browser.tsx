@@ -15,6 +15,7 @@ import type { ListResponse, MenuItemDto, RestaurantDto } from "@/lib/types";
 type Filters = {
   search: string;
   category: string;
+  location: string;
   sort: string;
   vendorId: string;
   restaurantId: string;
@@ -27,12 +28,14 @@ export function MenuBrowser() {
   const [filters, setFilters] = useState<Filters>({
     search: "",
     category: "",
+    location: "",
     sort: "newest",
     vendorId: "",
     restaurantId: "",
   });
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
+  const [locations, setLocations] = useState<string[]>([]);
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
   const [items, setItems] = useState<MenuItemDto[]>([]);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -63,6 +66,9 @@ export function MenuBrowser() {
     publicApi<{ success: boolean; categories: string[] }>("/api/menu/categories")
       .then((data) => setCategories(data.categories))
       .catch(() => setCategories([]));
+    publicApi<{ success: boolean; locations: string[] }>("/api/menu/locations")
+      .then((data) => setLocations(data.locations))
+      .catch(() => setLocations([]));
     publicApi<{ success: boolean; restaurants: RestaurantDto[] }>(
       "/api/restaurants?limit=50",
     )
@@ -88,12 +94,14 @@ export function MenuBrowser() {
     });
     if (debouncedSearch) params.set("search", debouncedSearch);
     if (filters.category) params.set("category", filters.category);
+    if (filters.location) params.set("location", filters.location);
     if (filters.vendorId) params.set("vendorId", filters.vendorId);
     if (filters.restaurantId) params.set("restaurantId", filters.restaurantId);
     return params.toString();
   }, [
     debouncedSearch,
     filters.category,
+    filters.location,
     filters.sort,
     filters.vendorId,
     filters.restaurantId,
@@ -126,7 +134,7 @@ export function MenuBrowser() {
   return (
     <div className="space-y-8">
       <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
-        <div className="grid gap-4 md:grid-cols-[1.4fr_1fr_1fr_1fr_auto] md:items-end">
+        <div className="grid gap-4 md:grid-cols-[1.3fr_1fr_1fr_1fr_1fr_auto] md:items-end">
           <div className="space-y-2">
             <Label htmlFor="search">Search pizzas</Label>
             <div className="relative">
@@ -152,6 +160,22 @@ export function MenuBrowser() {
               {categories.map((category) => (
                 <option key={category} value={category}>
                   {category}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="location">Location</Label>
+            <select
+              id="location"
+              value={filters.location}
+              onChange={(event) => updateFilter("location", event.target.value)}
+              className="h-9 w-full rounded-md border border-input bg-transparent px-2.5 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+            >
+              <option value="">All locations</option>
+              {locations.map((location) => (
+                <option key={location} value={location}>
+                  {location}
                 </option>
               ))}
             </select>

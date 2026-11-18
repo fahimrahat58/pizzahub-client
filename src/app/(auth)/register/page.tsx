@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { AuthShell } from "@/components/auth/auth-shell";
+import { ImageUpload } from "@/components/shared/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,10 +25,11 @@ const registerSchema = z
     email: z.email("Enter a valid email address"),
     password: z
       .string()
-      .min(8, "Use at least 8 characters")
+      .min(6, "Use at least 6 characters")
       .regex(/[a-z]/, "Include a lowercase letter")
       .regex(/[A-Z]/, "Include an uppercase letter"),
     confirmPassword: z.string(),
+    image: z.string().optional(),
   })
   .superRefine((values, ctx) => {
     if (values.password !== values.confirmPassword) {
@@ -66,6 +68,7 @@ export default function RegisterPage() {
       email: "",
       password: "",
       confirmPassword: "",
+      image: "",
     },
   });
 
@@ -78,6 +81,7 @@ export default function RegisterPage() {
         email: values.email.toLowerCase(),
         password: values.password,
         role: values.role,
+        ...(values.image ? { image: values.image } : {}),
       });
 
       if (error) {
@@ -110,7 +114,7 @@ export default function RegisterPage() {
 
   return (
     <AuthShell
-      title="Create your account"
+      title="Sign Up"
       subtitle="Choose how you want to use PizzaHub. You can always change your role later."
       footer={
         <>
@@ -123,19 +127,19 @@ export default function RegisterPage() {
     >
       <form onSubmit={handleSubmit((values) => void onSubmit(values))} className="space-y-5">
         <div className="space-y-2">
-          <Label>I want to join as</Label>
+          <Label>Account Role</Label>
           <div className="grid grid-cols-2 gap-3">
             {[
               {
                 value: "customer" as const,
                 label: "Customer",
-                description: "Order pizzas",
+                description: "Order your favourite pizzas",
                 icon: ShoppingBag,
               },
               {
                 value: "vendor" as const,
-                label: "Vendor",
-                description: "Sell pizzas",
+                label: "Vendor (Restaurant Owner)",
+                description: "Manage a restaurant and menu",
                 icon: Building2,
               },
             ].map((option) => {
@@ -185,6 +189,14 @@ export default function RegisterPage() {
           {errors.email ? <p className="text-xs text-destructive">{errors.email.message}</p> : null}
         </div>
 
+        <ImageUpload
+          value={watch("image") ?? ""}
+          onChange={(url) => setValue("image", url, { shouldValidate: true })}
+          label="Profile Image (optional)"
+          hint="JPG, PNG, WebP or GIF up to 5 MB. You can skip this step."
+          aspect="aspect-[3/1]"
+        />
+
         {role === "vendor" ? (
           <div className="flex gap-3 rounded-xl border border-orange-500/25 bg-orange-500/5 p-4 text-sm">
             <Info className="mt-0.5 size-4 shrink-0 text-orange-500" />
@@ -202,7 +214,7 @@ export default function RegisterPage() {
               id="password"
               type="password"
               autoComplete="new-password"
-              placeholder="At least 8 characters"
+              placeholder="At least 6 characters"
               {...register("password")}
             />
             {errors.password ? (
@@ -226,7 +238,7 @@ export default function RegisterPage() {
 
         <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
           {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <UtensilsCrossed className="size-4" />}
-          {isSubmitting ? "Creating account..." : "Create account"}
+          {isSubmitting ? "Creating account..." : "Sign Up"}
         </Button>
       </form>
 

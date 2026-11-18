@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Facebook, Instagram, Mail, MapPin, Phone, Twitter, Youtube } from "lucide-react";
 
 import { CurrentYear } from "@/components/layout/current-year";
 import { Brand } from "@/components/shared/ui-kit";
@@ -20,14 +21,15 @@ export function SiteFooter() {
         <div className="space-y-3">
           <Brand />
           <p className="max-w-xs text-sm text-muted-foreground">
-            Handcrafted pizzas, local kitchens, and a ordering experience worth
+            Handcrafted pizzas, local kitchens, and an ordering experience worth
             coming back to.
           </p>
         </div>
         <div>
           <h3 className="mb-3 text-sm font-semibold">Explore</h3>
           <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-            <Link href="/menu" className="hover:text-foreground">Full menu</Link>
+            <Link href="/" className="hover:text-foreground">Home</Link>
+            <Link href="/menu" className="hover:text-foreground">Browse Menu</Link>
             <Link href="/restaurants" className="hover:text-foreground">Restaurants</Link>
             <Link href="/register?role=vendor" className="hover:text-foreground">
               Become a vendor
@@ -55,17 +57,63 @@ export function SiteFooter() {
               </>
             ) : (
               <>
-                <Link href="/login" className="hover:text-foreground">Sign in</Link>
-                <Link href="/register" className="hover:text-foreground">Create account</Link>
+                <Link href="/login" className="hover:text-foreground">Sign In</Link>
+                <Link href="/register" className="hover:text-foreground">Sign Up</Link>
               </>
             )}
           </div>
         </div>
         <div>
-          <h3 className="mb-3 text-sm font-semibold">PizzaHub</h3>
-          <p className="text-sm text-muted-foreground">
-            Built for pizza lovers and independent kitchens.
-          </p>
+          <h3 className="mb-3 text-sm font-semibold">Contact</h3>
+          <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+            <a href="mailto:hello@pizzahub.example" className="flex items-center gap-2 hover:text-foreground">
+              <Mail className="size-4 shrink-0" /> hello@pizzahub.example
+            </a>
+            <a href="tel:+15550123456" className="flex items-center gap-2 hover:text-foreground">
+              <Phone className="size-4 shrink-0" /> +1 (555) 012-3456
+            </a>
+            <p className="flex items-start gap-2">
+              <MapPin className="mt-0.5 size-4 shrink-0" /> 24 Pizza Lane, Food District
+            </p>
+            <div className="flex items-center gap-3 pt-2">
+              <a
+                href="https://facebook.com"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="PizzaHub on Facebook"
+                className="rounded-md border border-border/70 p-2 transition hover:border-orange-500/60 hover:text-orange-500"
+              >
+                <Facebook className="size-4" />
+              </a>
+              <a
+                href="https://instagram.com"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="PizzaHub on Instagram"
+                className="rounded-md border border-border/70 p-2 transition hover:border-orange-500/60 hover:text-orange-500"
+              >
+                <Instagram className="size-4" />
+              </a>
+              <a
+                href="https://x.com"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="PizzaHub on X"
+                className="rounded-md border border-border/70 p-2 transition hover:border-orange-500/60 hover:text-orange-500"
+              >
+                <Twitter className="size-4" />
+              </a>
+              <a
+                href="https://youtube.com"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="PizzaHub on YouTube"
+                className="rounded-md border border-border/70 p-2 transition hover:border-orange-500/60 hover:text-orange-500"
+              >
+                <Youtube className="size-4" />
+              </a>
+            </div>
+          </div>
         </div>
       </div>
       <div className="border-t border-border/70 px-4 py-5 text-center text-xs text-muted-foreground">

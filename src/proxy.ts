@@ -19,5 +19,6 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/account/:path*"],
+  // `/menu` stays public; `/menu/:id` (item details) requires a session.
+  matcher: ["/dashboard/:path*", "/account/:path*", "/menu/:id"],
 };

@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { jwt } from "better-auth/plugins";
 import { db } from "@/lib/mongodb";
 
@@ -43,8 +44,27 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    minPasswordLength: 8,
+    minPasswordLength: 6,
     maxPasswordLength: 128,
+  },
+
+  hooks: {
+    // Better Auth only checks length by default. Enforce the full password
+    // policy here so it also applies to direct API calls, not just the form.
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/sign-up/email") return;
+      const password: unknown = ctx.body?.password;
+      if (typeof password !== "string" || password.length < 6) {
+        throw new APIError("BAD_REQUEST", {
+          message: "Password must be at least 6 characters",
+        });
+      }
+      if (!/[a-z]/.test(password) || !/[A-Z]/.test(password)) {
+        throw new APIError("BAD_REQUEST", {
+          message: "Password must include one uppercase and one lowercase letter",
+        });
+      }
+    }),
   },
 
   socialProviders: googleProvider,

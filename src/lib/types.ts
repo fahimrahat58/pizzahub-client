@@ -95,6 +95,7 @@ export interface MenuItemDto {
   vendorId: string;
   restaurantId: string | null;
   restaurant: RestaurantSummaryDto | null;
+  vendorName: string | null;
   name: string;
   description: string;
   category: string;
@@ -102,6 +103,8 @@ export interface MenuItemDto {
   ingredients: string[];
   location: string;
   image: string;
+  /** Cover photo first, then any extra photos. */
+  images: string[];
   isActive: boolean;
   approvalStatus: ApprovalStatus;
   isFeatured: boolean;
