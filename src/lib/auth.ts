@@ -52,6 +52,24 @@ export const auth = betterAuth({
     maxPasswordLength: 128,
   },
 
+  account: {
+    accountLinking: {
+      enabled: true,
+      disableImplicitLinking: false,
+
+      // Google's `email_verified` claim is the ownership proof for an existing
+      // email/password row. Google is intentionally NOT added to
+      // `trustedProviders`: an unverified Google email must never be enough to
+      // link. A trusted provider bypasses that email_verified check.
+      requireLocalEmailVerified: false,
+
+      // Same verified email only. Never overwrite the existing profile with
+      // provider data, which would touch fields this app manages itself.
+      allowDifferentEmails: false,
+      updateUserInfoOnLink: false,
+    },
+  },
+
   hooks: {
     // Better Auth only checks length by default. Enforce the full password
     // policy here so it also applies to direct API calls, not just the form.
