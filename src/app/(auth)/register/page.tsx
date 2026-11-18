@@ -1,252 +1,249 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { authClient } from "@/lib/auth-client";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Building2, Info, Loader2, ShoppingBag, UtensilsCrossed } from "lucide-react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { z } from "zod";
 
-type UserRole = "customer" | "vendor";
+import { AuthShell } from "@/components/auth/auth-shell";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { authClient } from "@/lib/auth-client";
+import { dashboardForRole } from "@/lib/roles";
+import { cn } from "@/lib/utils";
+
+const registerSchema = z
+  .object({
+    role: z.enum(["customer", "vendor"]),
+    name: z.string().trim().min(2, "Enter your full name"),
+    email: z.email("Enter a valid email address"),
+    password: z
+      .string()
+      .min(8, "Use at least 8 characters")
+      .regex(/[a-z]/, "Include a lowercase letter")
+      .regex(/[A-Z]/, "Include an uppercase letter"),
+    confirmPassword: z.string(),
+  })
+  .superRefine((values, ctx) => {
+    if (values.password !== values.confirmPassword) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["confirmPassword"],
+        message: "Passwords do not match",
+      });
+    }
+  });
+
+type RegisterValues = z.infer<typeof registerSchema>;
+
+const friendlyAuthError = (message: string): string => {
+  if (/already|exist|duplicate|taken/i.test(message)) {
+    return "An account with that email already exists. Try signing in instead.";
+  }
+  return message;
+};
 
 export default function RegisterPage() {
   const router = useRouter();
+  const [googleLoading, setGoogleLoading] = useState(false);
 
-  const [role, setRole] = useState<UserRole>("customer");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      role: "customer",
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
 
-  const passwordValid = /^(?=.*[a-z])(?=.*[A-Z]).{8,}$/.test(password);
+  const role = watch("role");
 
-  const handleRegister = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!name.trim()) {
-      toast.error("Please enter your full name");
-      return;
-    }
-
-    if (!passwordValid) {
-      toast.error(
-        "Password must contain uppercase, lowercase and at least 8 characters",
-      );
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
-
+  const onSubmit = async (values: RegisterValues) => {
     try {
-      setLoading(true);
-
       const { data, error } = await authClient.signUp.email({
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        password,
-        role,
+        name: values.name,
+        email: values.email.toLowerCase(),
+        password: values.password,
+        role: values.role,
       });
 
       if (error) {
-        toast.error(error.message || "Registration failed");
+        toast.error(friendlyAuthError(error.message ?? "Registration failed"));
         return;
       }
 
-      const createdRole = data?.user?.role === "vendor" ? "vendor" : "customer";
-
-      toast.success("Account created successfully!");
-
-      router.replace(`/dashboard/${createdRole}`);
+      toast.success("Welcome to PizzaHub!");
+      router.replace(dashboardForRole(data?.user?.role ?? values.role));
       router.refresh();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Something went wrong",
+        friendlyAuthError(error instanceof Error ? error.message : "Registration failed"),
       );
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogle = async () => {
+    setGoogleLoading(true);
     try {
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/dashboard/customer",
+        callbackURL: "/auth/callback",
       });
-    } catch {
-      toast.error("Google sign in failed");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Google sign-in failed");
+      setGoogleLoading(false);
     }
   };
 
   return (
-    <main className="min-h-screen bg-[#100d0b] px-4 py-12 text-white">
-      <div className="mx-auto grid min-h-[80vh] max-w-6xl items-center gap-12 lg:grid-cols-2">
-        <section className="hidden lg:block">
-          <Link href="/" className="text-3xl font-black tracking-tight">
-            <span className="text-orange-500">Pizza</span>Hub
+    <AuthShell
+      title="Create your account"
+      subtitle="Choose how you want to use PizzaHub. You can always change your role later."
+      footer={
+        <>
+          Already have an account?{" "}
+          <Link href="/login" className="font-semibold text-orange-500 hover:underline">
+            Sign in
           </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit((values) => void onSubmit(values))} className="space-y-5">
+        <div className="space-y-2">
+          <Label>I want to join as</Label>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              {
+                value: "customer" as const,
+                label: "Customer",
+                description: "Order pizzas",
+                icon: ShoppingBag,
+              },
+              {
+                value: "vendor" as const,
+                label: "Vendor",
+                description: "Sell pizzas",
+                icon: Building2,
+              },
+            ].map((option) => {
+              const Icon = option.icon;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setValue("role", option.value)}
+                  aria-pressed={role === option.value}
+                  className={cn(
+                    "flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition",
+                    role === option.value
+                      ? "border-orange-500 bg-orange-500/10"
+                      : "border-border hover:border-orange-500/50",
+                  )}
+                >
+                  <Icon
+                    className={cn(
+                      "size-5",
+                      role === option.value ? "text-orange-500" : "text-muted-foreground",
+                    )}
+                  />
+                  <span className="text-sm font-semibold">{option.label}</span>
+                  <span className="text-xs text-muted-foreground">{option.description}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-          <p className="mt-8 max-w-lg text-5xl font-bold leading-tight">
-            Your favorite pizza, delivered with love.
-          </p>
+        <div className="space-y-2">
+          <Label htmlFor="name">Full name</Label>
+          <Input id="name" autoComplete="name" placeholder="Jane Doe" {...register("name")} />
+          {errors.name ? <p className="text-xs text-destructive">{errors.name.message}</p> : null}
+        </div>
 
-          <p className="mt-5 max-w-md text-lg text-stone-400">
-            Join PizzaHub and discover delicious pizzas from restaurants around
-            you.
-          </p>
-        </section>
+        <div className="space-y-2">
+          <Label htmlFor="email">Email address</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            {...register("email")}
+          />
+          {errors.email ? <p className="text-xs text-destructive">{errors.email.message}</p> : null}
+        </div>
 
-        <section className="mx-auto w-full max-w-md rounded-2xl border border-stone-800 bg-[#1b1714] p-6 shadow-2xl sm:p-8">
-          <div className="mb-7 text-center">
-            <Link href="/" className="text-2xl font-black lg:hidden">
-              <span className="text-orange-500">Pizza</span>Hub
-            </Link>
-
-            <h1 className="mt-3 text-3xl font-bold">Create Account</h1>
-            <p className="mt-2 text-sm text-stone-400">
-              Sign up to get started with PizzaHub
+        {role === "vendor" ? (
+          <div className="flex gap-3 rounded-xl border border-orange-500/25 bg-orange-500/5 p-4 text-sm">
+            <Info className="mt-0.5 size-4 shrink-0 text-orange-500" />
+            <p className="text-muted-foreground">
+              Just create your account for now. You can add your restaurant,
+              photos, and menu from the vendor dashboard after signing in.
             </p>
           </div>
+        ) : null}
 
-          <form onSubmit={handleRegister} className="space-y-5">
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                I want to join as
-              </label>
-
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setRole("customer")}
-                  className={`rounded-xl border p-3 text-sm font-semibold transition ${
-                    role === "customer"
-                      ? "border-orange-500 bg-orange-500/10 text-orange-400"
-                      : "border-stone-700 text-stone-400 hover:border-stone-500"
-                  }`}
-                >
-                  Customer
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setRole("vendor")}
-                  className={`rounded-xl border p-3 text-sm font-semibold transition ${
-                    role === "vendor"
-                      ? "border-orange-500 bg-orange-500/10 text-orange-400"
-                      : "border-stone-700 text-stone-400 hover:border-stone-500"
-                  }`}
-                >
-                  Vendor
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="name" className="mb-2 block text-sm">
-                Full Name
-              </label>
-              <input
-                id="name"
-                type="text"
-                required
-                autoComplete="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your full name"
-                className="w-full rounded-lg border border-stone-700 bg-[#100d0b] px-4 py-3 outline-none transition focus:border-orange-500"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="email" className="mb-2 block text-sm">
-                Email Address
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full rounded-lg border border-stone-700 bg-[#100d0b] px-4 py-3 outline-none transition focus:border-orange-500"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="mb-2 block text-sm">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                required
-                autoComplete="new-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Create a strong password"
-                className="w-full rounded-lg border border-stone-700 bg-[#100d0b] px-4 py-3 outline-none transition focus:border-orange-500"
-              />
-
-              <p className="mt-2 text-xs text-stone-500">
-                At least 8 characters, including uppercase and lowercase
-                letters.
-              </p>
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="mb-2 block text-sm">
-                Confirm Password
-              </label>
-              <input
-                id="confirmPassword"
-                type="password"
-                required
-                autoComplete="new-password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm your password"
-                className="w-full rounded-lg border border-stone-700 bg-[#100d0b] px-4 py-3 outline-none transition focus:border-orange-500"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-orange-500 px-4 py-3 font-bold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading ? "Creating Account..." : "Create Account"}
-            </button>
-          </form>
-
-          <div className="my-5 flex items-center gap-3">
-            <div className="h-px flex-1 bg-stone-700" />
-            <span className="text-xs text-stone-500">OR</span>
-            <div className="h-px flex-1 bg-stone-700" />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              autoComplete="new-password"
+              placeholder="At least 8 characters"
+              {...register("password")}
+            />
+            {errors.password ? (
+              <p className="text-xs text-destructive">{errors.password.message}</p>
+            ) : null}
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm password</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              placeholder="Repeat password"
+              {...register("confirmPassword")}
+            />
+            {errors.confirmPassword ? (
+              <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>
+            ) : null}
+          </div>
+        </div>
 
-          <button
-            type="button"
-            onClick={handleGoogleSignIn}
-            className="w-full rounded-lg border border-stone-700 px-4 py-3 font-medium transition hover:bg-stone-800"
-          >
-            Continue with Google
-          </button>
+        <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
+          {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <UtensilsCrossed className="size-4" />}
+          {isSubmitting ? "Creating account..." : "Create account"}
+        </Button>
+      </form>
 
-          <p className="mt-6 text-center text-sm text-stone-400">
-            Already have an account?{" "}
-            <Link
-              href="/login"
-              className="font-semibold text-orange-400 hover:text-orange-300"
-            >
-              Sign in
-            </Link>
-          </p>
-        </section>
+      <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
+        <span className="h-px flex-1 bg-border" /> OR <span className="h-px flex-1 bg-border" />
       </div>
-    </main>
+
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        disabled={googleLoading}
+        onClick={() => void handleGoogle()}
+      >
+        {googleLoading ? <Loader2 className="size-4 animate-spin" /> : null}
+        Continue with Google
+      </Button>
+    </AuthShell>
   );
 }

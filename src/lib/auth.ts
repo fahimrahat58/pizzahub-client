@@ -9,6 +9,9 @@ if (!authURL) {
   throw new Error("BETTER_AUTH_URL is missing");
 }
 
+const frontendURL = process.env.FRONTEND_URL ?? authURL;
+const isSecure = authURL.startsWith("https://");
+
 const googleProvider =
   process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
     ? {
@@ -24,13 +27,23 @@ export const auth = betterAuth({
 
   baseURL: authURL,
 
+  secret: process.env.BETTER_AUTH_SECRET,
+
   database: mongodbAdapter(db),
 
-  trustedOrigins: ["http://localhost:3000"],
+  trustedOrigins: [authURL, frontendURL],
+
+  useSecureCookies: isSecure,
+  defaultCookieAttributes: {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: isSecure,
+    path: "/",
+  },
 
   emailAndPassword: {
     enabled: true,
-    minPasswordLength: 6,
+    minPasswordLength: 8,
     maxPasswordLength: 128,
   },
 
@@ -46,8 +59,9 @@ export const auth = betterAuth({
         required: false,
         defaultValue: "customer",
 
-        // Users cannot change their role through profile update
-        input: false,
+        // The signup form may request a role, but the database hook below
+        // whitelists it. Admin is never assignable from the client.
+        input: true,
       },
 
       isBlocked: {
@@ -81,6 +95,31 @@ export const auth = betterAuth({
         required: false,
 
         // Users cannot change subscription expiry
+        input: false,
+      },
+
+      subscriptionStatus: {
+        type: "string",
+        required: false,
+        input: false,
+      },
+
+      stripeCustomerId: {
+        type: "string",
+        required: false,
+        input: false,
+      },
+
+      stripeSubscriptionId: {
+        type: "string",
+        required: false,
+        input: false,
+      },
+
+      cancelAtPeriodEnd: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
         input: false,
       },
     },
@@ -118,7 +157,11 @@ export const auth = betterAuth({
             "role" in user ||
             "isBlocked" in user ||
             "subscriptionPlan" in user ||
-            "subscriptionExpiresAt" in user
+            "subscriptionStatus" in user ||
+            "stripeCustomerId" in user ||
+            "stripeSubscriptionId" in user ||
+            "subscriptionExpiresAt" in user ||
+            "cancelAtPeriodEnd" in user
           ) {
             return false;
           }
@@ -137,6 +180,8 @@ export const auth = betterAuth({
         issuer: authURL,
         audience: authURL,
         expirationTime: "15m",
+        // Lets the API reject tokens whose Better Auth session was revoked.
+        definePayload: ({ session }) => ({ sessionId: session.id }),
       },
     }),
   ],
