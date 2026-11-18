@@ -13,6 +13,7 @@ import {
   Store,
 } from "lucide-react";
 
+import { ChartCard } from "@/components/dashboard/chart-card";
 import {
   ApprovalBadge,
   EmptyState,
@@ -162,6 +163,29 @@ export function VendorOverview() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <ChartCard
+          title="Kitchen activity"
+          description="Orders across your current workflow."
+          data={[
+            { label: "Pending", value: pendingOrders },
+            { label: "Accepted", value: acceptedOrders },
+            { label: "Preparing", value: orders.filter((order) => order.status === "preparing").length },
+            { label: "Out for delivery", value: orders.filter((order) => order.status === "out_for_delivery").length },
+            { label: "Delivered", value: completedOrders },
+          ]}
+        />
+        <ChartCard
+          title="Menu status"
+          description="Published versus unpublished pizzas."
+          data={[
+            { label: "Published", value: published },
+            { label: "Unpublished", value: menu.length - published },
+            { label: "Restaurants", value: restaurants.length },
+          ]}
+        />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">

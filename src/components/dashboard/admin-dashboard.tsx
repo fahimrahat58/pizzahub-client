@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { ChartCard } from "@/components/dashboard/chart-card";
 import { OrderCard } from "@/components/dashboard/order-card";
 import { ProfilePanel } from "@/components/dashboard/profile-panel";
 import {
@@ -418,6 +419,26 @@ export function AdminDashboard() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <ChartCard
+              title="Community mix"
+              description="Accounts currently registered on PizzaHub."
+              data={[
+                { label: "Customers", value: stats?.totalCustomers ?? 0 },
+                { label: "Vendors", value: stats?.totalVendors ?? 0 },
+                { label: "Menu items", value: stats?.totalMenuItems ?? 0 },
+              ]}
+            />
+            <ChartCard
+              title="Moderation queue"
+              description="Listings and billing activity awaiting attention."
+              data={[
+                { label: "Pending menu items", value: stats?.pendingMenuItems ?? 0 },
+                { label: "Transactions", value: stats?.totalTransactions ?? 0 },
+              ]}
+            />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">

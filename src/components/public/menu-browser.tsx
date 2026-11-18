@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, Search, SlidersHorizontal } from "lucide-react";
+import { toast } from "sonner";
 
 import { PizzaCard } from "@/components/public/cards";
 import { EmptyState, ErrorState, PaginationControls } from "@/components/shared/ui-kit";
@@ -68,15 +69,24 @@ export function MenuBrowser() {
   useEffect(() => {
     publicApi<{ success: boolean; categories: string[] }>("/api/menu/categories")
       .then((data) => setCategories(data.categories))
-      .catch(() => setCategories([]));
+      .catch(() => {
+        setCategories([]);
+        toast.error("Could not load menu categories");
+      });
     publicApi<{ success: boolean; locations: string[] }>("/api/menu/locations")
       .then((data) => setLocations(data.locations))
-      .catch(() => setLocations([]));
+      .catch(() => {
+        setLocations([]);
+        toast.error("Could not load locations");
+      });
     publicApi<{ success: boolean; restaurants: RestaurantDto[] }>(
       "/api/restaurants?limit=50",
     )
       .then((data) => setRestaurants(data.restaurants))
-      .catch(() => setRestaurants([]));
+      .catch(() => {
+        setRestaurants([]);
+        toast.error("Could not load restaurants");
+      });
   }, []);
 
   useEffect(() => {
@@ -86,7 +96,10 @@ export function MenuBrowser() {
     }
     apiFetch<{ success: boolean; ids: string[] }>("/api/favorites/ids")
       .then((data) => setFavorites(new Set(data.ids)))
-      .catch(() => setFavorites(new Set()));
+      .catch(() => {
+        setFavorites(new Set());
+        toast.error("Could not load your favorites");
+      });
   }, [session?.user?.role]);
 
   const query = useMemo(() => {
@@ -119,7 +132,9 @@ export function MenuBrowser() {
       setItems(data.items);
       setPagination(data.pagination);
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Could not load the menu");
+      const message = loadError instanceof Error ? loadError.message : "Could not load the menu";
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }

@@ -125,6 +125,8 @@ export interface RestaurantDto {
   address: string;
   phone: string;
   openingHours: string | null;
+  ratingAvg: number;
+  reviewCount: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -165,10 +167,13 @@ export interface OrderDto {
 export interface ReviewDto {
   id: string;
   customerId: string;
-  menuItemId: string;
+  menuItemId: string | null;
+  restaurantId: string | null;
   orderId: string;
   rating: number;
   comment: string;
+  authorName?: string;
+  authorImage?: string | null;
   createdAt: string;
   updatedAt: string;
 }

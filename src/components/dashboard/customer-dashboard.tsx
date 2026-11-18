@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, ClipboardList, Loader2, XCircle } from "lucide-react";
 
+import { ChartCard } from "@/components/dashboard/chart-card";
 import { OrderCard } from "@/components/dashboard/order-card";
 import { ProfilePanel } from "@/components/dashboard/profile-panel";
 import { PizzaCard } from "@/components/public/cards";
@@ -107,6 +108,18 @@ export function CustomerDashboard() {
               </Card>
             ))}
           </div>
+
+          <ChartCard
+            title="Order activity"
+            description="A quick breakdown of your orders by status."
+            data={[
+              { label: "Pending", value: pendingOrders },
+              { label: "Accepted", value: acceptedOrders },
+              { label: "Preparing", value: orders.filter((order) => order.status === "preparing").length },
+              { label: "Delivered", value: orders.filter((order) => order.status === "delivered").length },
+              { label: "Rejected", value: rejectedOrders },
+            ]}
+          />
 
           <div>
             <h2 className="mb-4 text-xl font-semibold">Recent orders</h2>

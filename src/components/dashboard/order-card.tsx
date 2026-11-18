@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, Clock3, MapPin, PackageCheck, Truck, XCircle } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle2, Clock3, Loader2, MapPin, PackageCheck, Truck, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -38,11 +39,19 @@ export function OrderCard({
   const runAction = async (path: string, body?: unknown) => {
     setPending(true);
     try {
-      const response = await apiFetch<{ message?: string }>(path, {
+      const response = await apiFetch<{
+        message?: string;
+        email?: { sent: boolean; warning?: string };
+      }>(path, {
         method: "PATCH",
         body,
       });
       toast.success(response.message ?? "Order updated");
+      if (response.email && !response.email.sent) {
+        toast.warning("Order updated, but the email notification could not be sent.", {
+          description: response.email.warning,
+        });
+      }
       setAction(null);
       onChanged?.();
     } catch (error) {
@@ -59,6 +68,8 @@ export function OrderCard({
     return null;
   })();
 
+  const detailHref = `/dashboard/${role}/orders/${order.id}`;
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-3">
@@ -67,6 +78,9 @@ export function OrderCard({
           <p className="mt-1 text-xs text-muted-foreground">
             {new Date(order.createdAt).toLocaleString()}
           </p>
+          <Link href={detailHref} className="mt-1 inline-block text-xs font-medium text-orange-500 hover:underline">
+            View details
+          </Link>
         </div>
         <OrderStatusBadge status={order.status} />
       </CardHeader>
@@ -151,6 +165,7 @@ export function OrderCard({
         {role === "vendor" && order.status === "pending" ? (
           <div className="flex flex-wrap gap-2">
             <Button size="sm" onClick={() => void runAction(`/api/orders/${order.id}/accept`)} disabled={pending}>
+              {pending ? <Loader2 className="size-4 animate-spin" /> : null}
               Accept
             </Button>
             <Button variant="destructive" size="sm" onClick={() => setAction("reject")}>
@@ -168,6 +183,7 @@ export function OrderCard({
               void runAction(`/api/orders/${order.id}/status`, { status: nextStatus })
             }
           >
+            {pending ? <Loader2 className="size-4 animate-spin" /> : null}
             Mark as {nextStatus.replaceAll("_", " ")}
           </Button>
         ) : null}

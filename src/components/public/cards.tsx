@@ -86,7 +86,7 @@ export function PizzaCard({
   onChanged?: () => void;
 }) {
   return (
-    <article className="card-hover group overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+    <article className="card-hover group flex h-full flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
       <Link href={`/menu/${item.id}`} className="block">
         <div className="relative aspect-[4/3] overflow-hidden bg-muted">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -114,7 +114,7 @@ export function PizzaCard({
           </div>
         </div>
       </Link>
-      <div className="space-y-2 p-4">
+      <div className="flex flex-1 flex-col space-y-2 p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <Link href={`/menu/${item.id}`} className="font-semibold hover:text-orange-500">
@@ -160,7 +160,7 @@ export function PizzaCard({
         </div>
         <Link
           href={`/menu/${item.id}`}
-          className={cn(buttonVariants({ variant: "outline", size: "sm" }), "mt-2 w-full")}
+          className={cn(buttonVariants({ variant: "outline", size: "sm" }), "mt-auto w-full pt-2")}
         >
           View Details
         </Link>
@@ -171,8 +171,8 @@ export function PizzaCard({
 
 export function RestaurantCard({ restaurant }: { restaurant: RestaurantDto }) {
   return (
-    <article className="card-hover overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
-      <div className="relative aspect-[16/9] bg-muted">
+    <article className="card-hover flex h-full flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+      <div className="relative aspect-[4/3] bg-muted">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={restaurant.image}
@@ -180,7 +180,7 @@ export function RestaurantCard({ restaurant }: { restaurant: RestaurantDto }) {
           className="size-full object-cover"
         />
       </div>
-      <div className="space-y-2 p-5">
+      <div className="flex flex-1 flex-col space-y-2 p-5">
         <h3 className="text-lg font-semibold">
           <Link href={`/restaurants/${restaurant.id}`} className="hover:text-orange-500 hover:underline">
             {restaurant.name}
@@ -197,11 +197,15 @@ export function RestaurantCard({ restaurant }: { restaurant: RestaurantDto }) {
             </span>
           ) : null}
         </div>
+        <div className="flex items-center gap-1 pt-1 text-xs text-muted-foreground">
+          <Star className="size-3.5 fill-amber-400 text-amber-400" />
+          {restaurant.ratingAvg.toFixed(1)} ({restaurant.reviewCount})
+        </div>
         <Link
-          href={`/menu?restaurantId=${restaurant.id}`}
-          className="mt-2 inline-flex text-sm font-semibold text-orange-500 hover:underline"
+          href={`/restaurants/${restaurant.id}`}
+          className="mt-auto pt-2 text-sm font-semibold text-orange-500 hover:underline"
         >
-          View menu →
+          View restaurant →
         </Link>
       </div>
     </article>

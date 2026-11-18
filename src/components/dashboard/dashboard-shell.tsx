@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
@@ -174,6 +175,10 @@ export function DashboardShell({
               <p className="truncate text-sm font-medium">{userName}</p>
               <Badge variant="outline" className="mt-0.5 capitalize text-[10px]">{role}</Badge>
             </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Appearance</span>
+            <ThemeToggle size="sm" />
           </div>
           <Button
             variant="ghost"

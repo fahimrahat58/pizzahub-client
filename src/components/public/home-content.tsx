@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -19,9 +19,10 @@ import {
   UtensilsCrossed,
 } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
+import { toast } from "sonner";
 
 import { PizzaCard, RestaurantCard } from "@/components/public/cards";
-import { EmptyState, LinkButton } from "@/components/shared/ui-kit";
+import { EmptyState, ErrorState, LinkButton } from "@/components/shared/ui-kit";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { publicApi } from "@/lib/api";
@@ -88,44 +89,55 @@ export function HomeContent() {
   const [popular, setPopular] = useState<MenuItemDto[]>([]);
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const loadRef = useRef<() => void>(() => undefined);
 
   useEffect(() => {
     let active = true;
-    Promise.all([
-      publicApi<{ success: boolean; items: MenuItemDto[] }>("/api/menu/featured"),
-      publicApi<{ success: boolean; items: MenuItemDto[] }>(
-        "/api/menu?limit=6&sort=newest",
-      ),
-      publicApi<{ success: boolean; items: MenuItemDto[] }>(
-        "/api/menu?limit=4&sort=rating",
-      ),
-      publicApi<{ success: boolean; restaurants: RestaurantDto[] }>("/api/restaurants"),
-    ])
-      .then(([featuredData, publicData, popularData, restaurantData]) => {
-        if (!active) return;
-        // Featured items come first, then fill up to six with any approved and
-        // active items so the section always satisfies the six-item minimum.
-        const collected = [...featuredData.items];
-        for (const item of publicData.items) {
-          if (collected.length >= 8) break;
-          if (!collected.some((existing) => existing.id === item.id)) collected.push(item);
-        }
-        setFeatured(collected.slice(0, 8));
-        setPopular(popularData.items);
-        setRestaurants(restaurantData.restaurants.slice(0, 3));
-      })
-      .catch(() => {
-        if (active) {
-          setFeatured([]);
-          setPopular([]);
-          setRestaurants([]);
-        }
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+
+    const load = () => {
+      setLoading(true);
+      setError("");
+      Promise.all([
+        publicApi<{ success: boolean; items: MenuItemDto[] }>("/api/menu/featured"),
+        publicApi<{ success: boolean; items: MenuItemDto[] }>(
+          "/api/menu?limit=6&sort=newest",
+        ),
+        publicApi<{ success: boolean; items: MenuItemDto[] }>(
+          "/api/menu?limit=4&sort=rating",
+        ),
+        publicApi<{ success: boolean; restaurants: RestaurantDto[] }>("/api/restaurants"),
+      ])
+        .then(([featuredData, publicData, popularData, restaurantData]) => {
+          if (!active) return;
+          // Featured items come first, then fill up to six with any approved and
+          // active items so the section always satisfies the six-item minimum.
+          const collected = [...featuredData.items];
+          for (const item of publicData.items) {
+            if (collected.length >= 8) break;
+            if (!collected.some((existing) => existing.id === item.id)) collected.push(item);
+          }
+          setFeatured(collected.slice(0, 8));
+          setPopular(popularData.items);
+          setRestaurants(restaurantData.restaurants.slice(0, 3));
+        })
+        .catch((loadError) => {
+          if (!active) return;
+          const message =
+            loadError instanceof Error ? loadError.message : "Could not load home content";
+          setError(message);
+          toast.error(message);
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+    };
+
+    load();
+    loadRef.current = load;
     return () => {
       active = false;
+      loadRef.current = () => undefined;
     };
   }, []);
 
@@ -178,6 +190,12 @@ export function HomeContent() {
         </div>
       </section>
 
+      {error ? (
+        <section className="mx-auto w-full max-w-7xl px-4 pt-10 sm:px-6 lg:px-8">
+          <ErrorState message={error} onRetry={() => loadRef.current()} />
+        </section>
+      ) : null}
+
       <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <Reveal className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -191,7 +209,7 @@ export function HomeContent() {
         {loading ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 6 }).map((_, index) => (
-              <Skeleton key={index} className="aspect-[3/4] rounded-2xl" />
+              <Skeleton key={index} className="aspect-[4/3] rounded-2xl" />
             ))}
           </div>
         ) : featured.length ? (
@@ -299,7 +317,7 @@ export function HomeContent() {
         {loading ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton key={index} className="aspect-[3/4] rounded-2xl" />
+              <Skeleton key={index} className="aspect-[4/3] rounded-2xl" />
             ))}
           </div>
         ) : popular.length ? (

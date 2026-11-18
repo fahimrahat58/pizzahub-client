@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Save } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { ProfileImageUpload } from "@/components/dashboard/profile-image-upload";
+import { ErrorState } from "@/components/shared/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -38,28 +39,37 @@ type ProfileValues = z.infer<typeof profileSchema>;
 export function ProfilePanel({ role }: { role: "customer" | "vendor" | "admin" }) {
   const [profile, setProfile] = useState<UserDto | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const form = useForm<ProfileValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: { name: "", businessName: "", phone: "", address: "" },
   });
 
-  useEffect(() => {
-    apiFetch<{ success: boolean; user: UserDto }>("/api/users/me")
-      .then((data) => {
-        setProfile(data.user);
-        form.reset({
-          name: data.user.name,
-          businessName: data.user.businessName ?? "",
-          phone: data.user.phone ?? "",
-          address: data.user.address ?? "",
-        });
-      })
-      .catch((error) =>
-        toast.error(error instanceof Error ? error.message : "Could not load profile"),
-      )
-      .finally(() => setLoading(false));
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await apiFetch<{ success: boolean; user: UserDto }>("/api/users/me");
+      setProfile(data.user);
+      form.reset({
+        name: data.user.name,
+        businessName: data.user.businessName ?? "",
+        phone: data.user.phone ?? "",
+        address: data.user.address ?? "",
+      });
+    } catch (loadError) {
+      const message = loadError instanceof Error ? loadError.message : "Could not load profile";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
   }, [form]);
+
+  useEffect(() => {
+    void Promise.resolve().then(load);
+  }, [load]);
 
   const saveProfile = async (values: ProfileValues) => {
     try {
@@ -86,6 +96,8 @@ export function ProfilePanel({ role }: { role: "customer" | "vendor" | "admin" }
       </div>
     );
   }
+
+  if (error) return <ErrorState message={error} onRetry={() => void load()} />;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">

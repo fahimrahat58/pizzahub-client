@@ -102,7 +102,10 @@ export function MenuDetail() {
               openingHours: data.restaurant.openingHours,
             }),
           )
-          .catch(() => setRestaurant(null));
+          .catch(() => {
+            setRestaurant(null);
+            toast.warning("Restaurant details could not be loaded.");
+          });
       }
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Could not load this pizza");
@@ -133,7 +136,10 @@ export function MenuDetail() {
           ),
         ),
       )
-      .catch(() => setDeliveredOrders([]));
+      .catch(() => {
+        setDeliveredOrders([]);
+        toast.error("Could not load your delivered orders for reviews.");
+      });
   }, [id, session?.user?.role]);
 
   const loadFavoriteIds = useCallback(async () => {
@@ -146,6 +152,7 @@ export function MenuDetail() {
       setFavoriteIds(new Set(data.ids));
     } catch {
       setFavoriteIds(new Set());
+      toast.error("Could not load your favorites.");
     }
   }, [session?.user?.role]);
 

@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Loader2, MapPin, Phone } from "lucide-react";
+import { ArrowLeft, Loader2, MapPin, Phone, Star } from "lucide-react";
 
 import { PizzaCard } from "@/components/public/cards";
+import { RestaurantReviews } from "@/components/public/restaurant-reviews";
 import { EmptyState, ErrorState } from "@/components/shared/ui-kit";
 import { publicApi } from "@/lib/api";
 import type { ListResponse, MenuItemDto, RestaurantDto } from "@/lib/types";
@@ -16,6 +17,13 @@ export function RestaurantDetail() {
   const [items, setItems] = useState<MenuItemDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const refreshRating = async () => {
+    const data = await publicApi<{ success: boolean; restaurant: RestaurantDto }>(
+      `/api/restaurants/${params.id}`,
+    );
+    setRestaurant(data.restaurant);
+  };
 
   useEffect(() => {
     let active = true;
@@ -68,6 +76,10 @@ export function RestaurantDetail() {
             <span className="flex items-center gap-1.5"><MapPin className="size-4" /> {restaurant.address}</span>
             <span className="flex items-center gap-1.5"><Phone className="size-4" /> {restaurant.phone}</span>
             {restaurant.openingHours ? <span>{restaurant.openingHours}</span> : null}
+            <span className="flex items-center gap-1">
+              <Star className="size-4 fill-amber-400 text-amber-400" />
+              {restaurant.ratingAvg.toFixed(1)} ({restaurant.reviewCount} reviews)
+            </span>
           </div>
         </div>
       </div>
@@ -80,6 +92,14 @@ export function RestaurantDetail() {
       ) : (
         <EmptyState title="No live pizzas yet" description="This kitchen is preparing its menu." />
       )}
+
+      <div className="mt-12">
+        <RestaurantReviews
+          restaurant={restaurant}
+          menuItemIds={items.map((item) => item.id)}
+          onReviewAdded={() => void refreshRating().catch(() => undefined)}
+        />
+      </div>
     </main>
   );
 }
