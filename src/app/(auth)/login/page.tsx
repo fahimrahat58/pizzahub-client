@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -27,6 +27,7 @@ type LoginValues = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const router = useRouter();
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { data: session, isPending } = authClient.useSession();
 
   const {
@@ -105,13 +106,25 @@ export default function LoginPage() {
 
         <div className="space-y-2">
           <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            placeholder="Your password"
-            {...register("password")}
-          />
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              placeholder="Your password"
+              className="pr-10"
+              {...register("password")}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((visible) => !visible)}
+              className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground transition hover:text-foreground"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
+            >
+              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          </div>
           {errors.password ? (
             <p className="text-xs text-destructive">{errors.password.message}</p>
           ) : null}

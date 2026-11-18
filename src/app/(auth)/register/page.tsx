@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Building2, Info, Loader2, ShoppingBag, UtensilsCrossed } from "lucide-react";
+import { Building2, Eye, EyeOff, Info, Loader2, ShoppingBag, UtensilsCrossed } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -57,6 +57,8 @@ export default function RegisterPage() {
   const router = useRouter();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const {
     register,
@@ -218,13 +220,25 @@ export default function RegisterPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="new-password"
-              placeholder="At least 6 characters"
-              {...register("password")}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                placeholder="At least 6 characters"
+                className="pr-10"
+                {...register("password")}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((visible) => !visible)}
+                className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground transition hover:text-foreground"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+              >
+                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
+            </div>
             <p className="text-xs text-muted-foreground">
               Use at least 6 characters with one uppercase and one lowercase letter.
             </p>
@@ -234,13 +248,25 @@ export default function RegisterPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">Confirm password</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              autoComplete="new-password"
-              placeholder="Repeat password"
-              {...register("confirmPassword")}
-            />
+            <div className="relative">
+              <Input
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                autoComplete="new-password"
+                placeholder="Repeat password"
+                className="pr-10"
+                {...register("confirmPassword")}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((visible) => !visible)}
+                className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground transition hover:text-foreground"
+                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                aria-pressed={showConfirmPassword}
+              >
+                {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
+            </div>
             {errors.confirmPassword ? (
               <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>
             ) : null}
