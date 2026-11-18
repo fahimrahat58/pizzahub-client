@@ -18,9 +18,8 @@ export const metadata: Metadata = {
     "Discover handcrafted pizzas from independent kitchens, order in seconds, and track every step to your door.",
 };
 
-// The shared header reads the live pathname and auth session. With Cache
-// Components enabled, those request-time values cannot be placed in the static
-// shell, so opted-out blocking navigation is the documented fix for this app.
+// The shared header reads the live auth session on the client. Blocking
+// navigation keeps that shell and the route-scoped dashboard chrome in sync.
 export const instant = false;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

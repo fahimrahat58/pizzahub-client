@@ -1,6 +1,9 @@
+import { DashboardChromeStyles } from "@/components/dashboard/dashboard-chrome-styles";
+
 export default function DashboardLoading() {
   return (
     <div data-dashboard-shell className="flex min-h-dvh bg-muted/20" aria-busy="true">
+      <DashboardChromeStyles />
       <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-background p-4 lg:flex">
         <div className="h-8 w-32 animate-pulse rounded bg-muted" />
         <div className="mt-8 space-y-3">

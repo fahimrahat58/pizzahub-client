@@ -47,12 +47,16 @@ const friendlyAuthError = (message: string): string => {
   if (/already|exist|duplicate|taken/i.test(message)) {
     return "An account with that email already exists. Try signing in instead.";
   }
+  if (/internal server|unavailable|failed to fetch|network/i.test(message)) {
+    return "We couldn't complete registration right now. Please try again in a moment.";
+  }
   return message;
 };
 
 export default function RegisterPage() {
   const router = useRouter();
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
 
   const {
     register,
@@ -75,6 +79,9 @@ export default function RegisterPage() {
   const role = watch("role");
 
   const onSubmit = async (values: RegisterValues) => {
+    // A profile image may still be in flight; submitting early would create an
+    // account without the uploaded URL.
+    if (imageUploading) return;
     try {
       const { data, error } = await authClient.signUp.email({
         name: values.name,
@@ -192,6 +199,7 @@ export default function RegisterPage() {
         <ImageUpload
           value={watch("image") ?? ""}
           onChange={(url) => setValue("image", url, { shouldValidate: true })}
+          onUploadingChange={setImageUploading}
           label="Profile Image (optional)"
           hint="JPG, PNG, WebP or GIF up to 5 MB. You can skip this step."
           aspect="aspect-[3/1]"
@@ -239,9 +247,22 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
-          {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <UtensilsCrossed className="size-4" />}
-          {isSubmitting ? "Creating account..." : "Sign Up"}
+        <Button
+          type="submit"
+          className="w-full"
+          size="lg"
+          disabled={isSubmitting || imageUploading}
+        >
+          {isSubmitting || imageUploading ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <UtensilsCrossed className="size-4" />
+          )}
+          {imageUploading
+            ? "Finishing image upload..."
+            : isSubmitting
+              ? "Creating account..."
+              : "Sign Up"}
         </Button>
       </form>
 

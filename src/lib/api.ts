@@ -180,6 +180,9 @@ export const uploadImage = async (file: File): Promise<string> => {
   if (!ALLOWED_IMAGE_TYPES.includes(file.type as (typeof ALLOWED_IMAGE_TYPES)[number])) {
     throw new Error("Choose a JPG, PNG, WebP, or GIF image.");
   }
+  if (file.size === 0) {
+    throw new Error("The selected file is empty. Choose another image.");
+  }
   if (file.size > 5 * 1024 * 1024) {
     throw new Error("Images must be 5 MB or smaller.");
   }

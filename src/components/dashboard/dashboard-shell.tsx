@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { DashboardChromeStyles } from "@/components/dashboard/dashboard-chrome-styles";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -116,6 +117,7 @@ export function DashboardShell({
 
   return (
     <div data-dashboard-shell className="flex min-h-dvh bg-muted/20">
+      <DashboardChromeStyles />
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex h-dvh w-64 flex-col overflow-hidden border-r border-border bg-background transition-transform lg:translate-x-0",

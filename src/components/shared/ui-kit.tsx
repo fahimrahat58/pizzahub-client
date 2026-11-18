@@ -194,29 +194,39 @@ export function ConfirmDialog({
 export function ImageUpload({
   value,
   onChange,
+  onUploadingChange,
   label = "Food photo",
   hint = "JPG, PNG, WebP or GIF up to 5 MB",
   aspect = "aspect-[4/3]",
 }: {
   value: string;
   onChange: (url: string) => void;
+  onUploadingChange?: (uploading: boolean) => void;
   label?: string;
   hint?: string;
   aspect?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const uploadingRef = useRef(false);
   const [uploading, setUploading] = useState(false);
 
+  const setUploadState = (next: boolean) => {
+    uploadingRef.current = next;
+    setUploading(next);
+    onUploadingChange?.(next);
+  };
+
   const handleFile = async (file?: File) => {
-    if (!file) return;
-    setUploading(true);
+    if (!file || uploadingRef.current) return;
+    setUploadState(true);
     try {
-      onChange(await uploadImage(file));
+      const url = await uploadImage(file);
+      onChange(url);
       toast.success("Image uploaded");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Upload failed");
     } finally {
-      setUploading(false);
+      setUploadState(false);
       if (inputRef.current) inputRef.current.value = "";
     }
   };
