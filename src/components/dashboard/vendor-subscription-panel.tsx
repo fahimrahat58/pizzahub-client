@@ -22,11 +22,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  billingIntervalLabel,
   createCheckoutSession,
   createPortalSession,
   getPlans,
-  getPurchasedBillingInterval,
   getSubscriptionStatus,
 } from "@/lib/subscriptions";
 import type {
@@ -89,7 +87,6 @@ export function VendorSubscriptionPanel() {
   const [subscription, setSubscription] = useState<SubscriptionStatusDto | null>(null);
   const [plans, setPlans] = useState<PlanPrice[]>([]);
   const [configured, setConfigured] = useState(false);
-  const [billing, setBilling] = useState<BillingPlan>("monthly");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [action, setAction] = useState<PanelAction | null>(null);
@@ -234,13 +231,38 @@ export function VendorSubscriptionPanel() {
 
   const monthly = plans.find((plan) => plan.id === "monthly");
   const yearly = plans.find((plan) => plan.id === "yearly");
-  // This badge describes the cycle Stripe sold, not the pricing toggle below.
-  const purchasedCycleLabel = subscription.isPremium
-    ? billingIntervalLabel(getPurchasedBillingInterval(subscription))
+  // Only the live Stripe Price interval decides which Premium card is current.
+  // The persisted value and any future-purchase choice are not used here.
+  const stripePurchasedInterval = subscription.isPremium
+    ? subscription.stripeRecurringInterval
     : null;
-  const activePrice = billing === "monthly" ? monthly : yearly;
   const busy = action !== null;
   const canSubscribe = configured && !subscription.isPremium && !busy;
+  const premiumCards: Array<{
+    id: BillingPlan;
+    name: string;
+    interval: "month" | "year";
+    price: PlanPrice | undefined;
+    suffix: string;
+    billed: string;
+  }> = [
+    {
+      id: "monthly",
+      name: "Premium Monthly",
+      interval: "month",
+      price: monthly,
+      suffix: "/ month",
+      billed: "monthly",
+    },
+    {
+      id: "yearly",
+      name: "Premium Yearly",
+      interval: "year",
+      price: yearly,
+      suffix: "/ year",
+      billed: "yearly",
+    },
+  ];
 
   return (
     <div className="space-y-8">
@@ -255,17 +277,7 @@ export function VendorSubscriptionPanel() {
           <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-semibold">Your current plan</h2>
-              <Badge variant={subscription.isPremium ? "default" : "outline"}>
-                {subscription.isPremium ? (
-                  <><Sparkles className="mr-1 size-3" /> Premium</>
-                ) : (
-                  "Free"
-                )}
-              </Badge>
               <Badge variant="secondary">{statusLabels[subscription.status] ?? subscription.status}</Badge>
-              {purchasedCycleLabel ? (
-                <Badge variant="outline">{purchasedCycleLabel} billing</Badge>
-              ) : null}
               {subscription.canceledAt ? <Badge variant="destructive">Canceled</Badge> : null}
             </div>
             <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -337,26 +349,6 @@ export function VendorSubscriptionPanel() {
         </div>
       ) : null}
 
-      <div className="flex justify-center">
-        <div className="inline-flex rounded-lg border border-border bg-muted/50 p-1">
-          {(["monthly", "yearly"] as BillingPlan[]).map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setBilling(value)}
-              className={cn(
-                "rounded-md px-4 py-2 text-sm font-medium transition",
-                billing === value
-                  ? "bg-background text-orange-600 shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {value === "monthly" ? "Monthly" : "Yearly"}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="flex flex-col">
           <CardHeader>
@@ -386,61 +378,73 @@ export function VendorSubscriptionPanel() {
           </CardContent>
         </Card>
 
-        <Card className="flex flex-col border-orange-500/40 shadow-lg shadow-orange-500/5">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <Sparkles className="size-5 text-orange-500" /> Premium
-              </span>
-              {subscription.isPremium ? (
-                <Badge>Current plan</Badge>
-              ) : (
-                <Badge variant="secondary">Most popular</Badge>
+        {premiumCards.map((card) => {
+          const isCurrentPlan =
+            subscription.isPremium && stripePurchasedInterval === card.interval;
+          return (
+            <Card
+              key={card.id}
+              className={cn(
+                "flex flex-col border-orange-500/40 shadow-lg shadow-orange-500/5",
+                isCurrentPlan && "ring-2 ring-orange-500/60",
               )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-1 flex-col gap-6">
-            <div>
-              <p className="text-3xl font-bold">
-                {formatPrice(activePrice, "See price at checkout")}
-                {activePrice?.amount !== null && activePrice ? (
-                  <span className="text-sm font-normal text-muted-foreground">
-                    {" "}/ {billing === "monthly" ? "month" : "year"}
+            >
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="size-5 text-orange-500" /> {card.name}
                   </span>
-                ) : null}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Billed {billing === "monthly" ? "monthly" : "yearly"} via Stripe
-              </p>
-            </div>
-            <ul className="space-y-3 text-sm">
-              {premiumFeatures.map((feature) => (
-                <li key={feature} className="flex items-start gap-2">
-                  <Check className="mt-0.5 size-4 shrink-0 text-emerald-500" />
-                  {feature}
-                </li>
-              ))}
-            </ul>
-            {subscription.isPremium ? (
-              <Button className="mt-auto" variant="outline" disabled={busy} onClick={() => void openPortal()}>
-                Manage your subscription <ArrowRight className="size-4" />
-              </Button>
-            ) : (
-              <Button
-                className="mt-auto"
-                disabled={!canSubscribe}
-                onClick={() => void subscribe(billing)}
-              >
-                {action === billing ? (
-                  <Loader2 className="size-4 animate-spin" />
+                  {isCurrentPlan ? (
+                    <Badge>Current plan</Badge>
+                  ) : card.id === "yearly" ? (
+                    <Badge variant="secondary">Most popular</Badge>
+                  ) : null}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-1 flex-col gap-6">
+                <div>
+                  <p className="text-3xl font-bold">
+                    {formatPrice(card.price, "See price at checkout")}
+                    {card.price?.amount !== null && card.price ? (
+                      <span className="text-sm font-normal text-muted-foreground">
+                        {" "}{card.suffix}
+                      </span>
+                    ) : null}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Billed {card.billed} via Stripe
+                  </p>
+                </div>
+                <ul className="space-y-3 text-sm">
+                  {premiumFeatures.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2">
+                      <Check className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                {subscription.isPremium ? (
+                  <Button className="mt-auto" variant="outline" disabled={busy} onClick={() => void openPortal()}>
+                    Manage your subscription <ArrowRight className="size-4" />
+                  </Button>
                 ) : (
-                  <Sparkles className="size-4" />
+                  <Button
+                    className="mt-auto"
+                    disabled={!canSubscribe}
+                    onClick={() => void subscribe(card.id)}
+                  >
+                    {action === card.id ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="size-4" />
+                    )}
+                    Upgrade to Premium
+                  </Button>
                 )}
-                Upgrade to Premium
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       <Card>
