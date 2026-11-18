@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Loader2, Pencil, Plus, Store, Trash2 } from "lucide-react";
-import { toast } from "sonner";
 
 import { DeleteRestaurantDialog } from "@/components/dashboard/delete-restaurant-dialog";
 import { MenuFormDialog } from "@/components/dashboard/menu-form-dialog";
 import { RestaurantFormDialog } from "@/components/dashboard/restaurant-form-dialog";
+import { RestaurantLimitDialog } from "@/components/dashboard/restaurant-limit-dialog";
 import {
   EmptyState,
   ErrorState,
@@ -16,10 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { apiFetch } from "@/lib/api";
-import {
-  FREE_RESTAURANT_LIMIT_MESSAGE,
-  getSubscriptionStatus,
-} from "@/lib/subscriptions";
+import { getSubscriptionStatus } from "@/lib/subscriptions";
 import type {
   ListResponse,
   MenuItemDto,
@@ -28,7 +25,6 @@ import type {
 } from "@/lib/types";
 
 export function VendorRestaurantsPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
   const [menu, setMenu] = useState<MenuItemDto[]>([]);
@@ -40,6 +36,7 @@ export function VendorRestaurantsPage() {
   const [editing, setEditing] = useState<RestaurantDto | null>(null);
   const [deleting, setDeleting] = useState<RestaurantDto | null>(null);
   const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [limitDialogOpen, setLimitDialogOpen] = useState(false);
   const autoOpened = useRef(false);
 
   const load = useCallback(async () => {
@@ -74,14 +71,10 @@ export function VendorRestaurantsPage() {
     void Promise.resolve().then(load);
   }, [load]);
 
-  const showLimitToast = useCallback(() => {
-    toast.warning(FREE_RESTAURANT_LIMIT_MESSAGE, {
-      action: {
-        label: "Upgrade to Premium",
-        onClick: () => router.push("/dashboard/vendor/subscription"),
-      },
-    });
-  }, [router]);
+  const openLimitDialog = useCallback(() => {
+    setFormOpen(false);
+    setLimitDialogOpen(true);
+  }, []);
 
   const restaurantLimit = subscription?.activeRestaurantLimit ?? 3;
   const atRestaurantLimit =
@@ -89,12 +82,12 @@ export function VendorRestaurantsPage() {
 
   const openCreate = useCallback(() => {
     if (atRestaurantLimit) {
-      showLimitToast();
+      openLimitDialog();
       return;
     }
     setEditing(null);
     setFormOpen(true);
-  }, [atRestaurantLimit, showLimitToast]);
+  }, [atRestaurantLimit, openLimitDialog]);
 
   useEffect(() => {
     if (loading || autoOpened.current) return;
@@ -201,7 +194,11 @@ export function VendorRestaurantsPage() {
         onOpenChange={setFormOpen}
         restaurant={editing}
         onSaved={() => void load()}
-        onLimitReached={showLimitToast}
+        onLimitReached={openLimitDialog}
+      />
+      <RestaurantLimitDialog
+        open={limitDialogOpen}
+        onOpenChange={setLimitDialogOpen}
       />
       <DeleteRestaurantDialog
         restaurant={deleting}
