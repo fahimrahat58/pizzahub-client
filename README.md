@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PizzaHub Client
 
-## Getting Started
+Next.js 16 App Router frontend for PizzaHub. It uses React 19, TypeScript, Tailwind CSS, shadcn-style reusable components, Motion, React Hook Form + Zod, Better Auth, Sonner toasts, and the Express API in `../pizzahub-server`.
 
-First, run the development server:
+## Quick start
 
 ```bash
+cp .env.example .env
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open <http://localhost:3000>. For the full stack, start `pizzahub-server` on port 5000 first.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Scripts:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `npm run dev` — development server
+- `npm run build` — production build
+- `npm start` — serve a production build
+- `npm run lint` — ESLint
 
-## Learn More
+## Environment
 
-To learn more about Next.js, take a look at the following resources:
+| Variable | Purpose |
+| --- | --- |
+| `BETTER_AUTH_SECRET` | Must match the server secret. |
+| `BETTER_AUTH_URL` | Auth base URL and JWT issuer/audience. |
+| `FRONTEND_URL` | Public redirect base URL. |
+| `MONGODB_URI`, `DB_NAME` | Better Auth Mongo adapter. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional Google OAuth. |
+| `NEXT_PUBLIC_API_URL` | Express API base URL. |
+| `NEXT_PUBLIC_AUTH_URL` | Base URL for `/api/auth/token` and `/api/auth/jwks`. |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Only `NEXT_PUBLIC_*` variables reach the browser; keep secrets server-side.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Structure
 
-## Deploy on Vercel
+- `src/app/(auth)` — login and registration
+- `src/app/(public)` — home, menu, item details, restaurants
+- `src/app/dashboard` — customer, vendor, and admin workspaces
+- `src/components/layout` — shared header/footer and dashboard shell
+- `src/components/public` — menu browser, cards, detail views
+- `src/components/dashboard` — role dashboards, forms, order timeline, charts
+- `src/components/shared` — reusable form, dialog, upload, and UI primitives
+- `src/lib` — auth client, JWT-aware API client, shared types
+- `src/app/api/auth/[...all]/route.ts` — Better Auth catch-all, including `/token` and `/jwks`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## UI conventions
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Warm cream backgrounds with tomato red and oven-orange accents; dark mode uses charcoal surfaces with the same accents.
+- One heading/paragraph scale across public and dashboard pages; cards and images use equal dimensions in grids.
+- Buttons come from the shared UI kit so home, forms, and dashboards stay consistent.
+- Route-level `loading.tsx`, `error.tsx`, `not-found.tsx`, and `global-error.tsx` handle navigation and render failures. API and form failures use inline messages plus Sonner toasts.
+- The theme toggle persists in local storage and applies before paint to avoid hydration flash.
+
+See `../README.md` for the advanced search query parameters and JWT middleware flow.

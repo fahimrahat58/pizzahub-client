@@ -50,6 +50,9 @@ export function MenuBrowser() {
     queueMicrotask(() => {
       setFilters((current) => ({
         ...current,
+        search: params.get("search") ?? current.search,
+        category: params.get("category") ?? "",
+        location: params.get("location") ?? "",
         vendorId: params.get("vendorId") ?? "",
         restaurantId: params.get("restaurantId") ?? "",
       }));
@@ -216,6 +219,7 @@ export function MenuBrowser() {
               setFilters({
                 search: "",
                 category: "",
+                location: "",
                 sort: "newest",
                 vendorId: "",
                 restaurantId: "",
@@ -227,9 +231,9 @@ export function MenuBrowser() {
             <SlidersHorizontal className="size-4" /> Reset
           </Button>
         </div>
-        {filters.vendorId || filters.restaurantId ? (
+        {filters.vendorId || filters.restaurantId || filters.location || filters.category ? (
           <p className="mt-3 text-xs text-muted-foreground">
-            Showing pizzas from one restaurant. Use Reset to see everything.
+            Filters are active. Use Reset to see everything.
           </p>
         ) : null}
       </div>

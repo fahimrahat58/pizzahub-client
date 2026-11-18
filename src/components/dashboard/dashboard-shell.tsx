@@ -114,7 +114,7 @@ export function DashboardShell({
   };
 
   return (
-    <div className="flex min-h-dvh bg-muted/20">
+    <div data-dashboard-shell className="flex min-h-dvh bg-muted/20">
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex h-dvh w-64 flex-col overflow-hidden border-r border-border bg-background transition-transform lg:translate-x-0",

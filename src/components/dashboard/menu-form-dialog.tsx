@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Save } from "lucide-react";
+import { ImagePlus, Loader2, Save, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -20,8 +20,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, uploadImage } from "@/lib/api";
 import type { MenuItemDto, RestaurantDto } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 const menuSchema = z.object({
   restaurantId: z
@@ -38,6 +39,7 @@ const menuSchema = z.object({
   ingredients: z.string().trim().min(1, "Add at least one ingredient"),
   location: z.string().trim().min(2, "Enter the area or city").max(100),
   image: z.url("Upload a menu image"),
+  images: z.array(z.url()).max(5).optional(),
   isActive: z.boolean(),
 });
 
@@ -45,6 +47,83 @@ type MenuValues = z.infer<typeof menuSchema>;
 
 const selectClass =
   "h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-2.5 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
+
+function AdditionalImages({
+  images,
+  onChange,
+}: {
+  images: string[];
+  onChange: (urls: string[]) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setUploading(true);
+    try {
+      const remaining = 5 - images.length;
+      const uploaded: string[] = [];
+      for (const file of Array.from(files).slice(0, remaining)) {
+        uploaded.push(await uploadImage(file));
+      }
+      if (uploaded.length) {
+        onChange([...images, ...uploaded].slice(0, 5));
+        toast.success(`${uploaded.length} photo${uploaded.length > 1 ? "s" : ""} added`);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not upload photos");
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <span className="text-sm font-medium">Additional photos (optional)</span>
+      <div className="flex flex-wrap gap-2">
+        {images.map((url, index) => (
+          <div key={`${url}-${index}`} className="relative size-20 overflow-hidden rounded-lg border border-border">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={url} alt={`Extra photo ${index + 1}`} className="size-full object-cover" />
+            <button
+              type="button"
+              aria-label={`Remove photo ${index + 1}`}
+              onClick={() => onChange(images.filter((_, i) => i !== index))}
+              className="absolute top-1 right-1 rounded-full bg-black/70 p-1 text-white hover:bg-black"
+            >
+              <X className="size-3" />
+            </button>
+          </div>
+        ))}
+        {images.length < 5 ? (
+          <label
+            className={cn(
+              "flex size-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-border bg-muted/20 text-xs text-muted-foreground transition hover:border-orange-500/60",
+              uploading && "pointer-events-none opacity-60",
+            )}
+          >
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              multiple
+              className="sr-only"
+              disabled={uploading}
+              onChange={(event) => void handleFiles(event.target.files)}
+            />
+            {uploading ? <Loader2 className="size-5 animate-spin" /> : <ImagePlus className="size-5" />}
+            {uploading ? "Uploading" : "Add photos"}
+          </label>
+        ) : null}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Up to 5 extra photos. The first image above remains the cover photo.
+      </p>
+    </div>
+  );
+}
 
 export function MenuFormDialog({
   open,
@@ -72,6 +151,7 @@ export function MenuFormDialog({
       ingredients: "",
       location: "",
       image: "",
+      images: [],
       isActive: false,
     },
   });
@@ -92,6 +172,7 @@ export function MenuFormDialog({
       ingredients: item?.ingredients.join(", ") ?? "",
       location: item?.location ?? "",
       image: item?.image ?? "",
+      images: (item?.images ?? (item ? [item.image] : [])).slice(1),
       isActive: item?.isActive ?? false,
     });
     form.clearErrors();
@@ -111,6 +192,7 @@ export function MenuFormDialog({
         .filter(Boolean),
       location: values.location,
       image: values.image,
+      images: [values.image, ...(values.images ?? [])],
       isActive: values.isActive,
     };
     try {
@@ -178,6 +260,13 @@ export function MenuFormDialog({
               {form.formState.errors.image.message}
             </p>
           ) : null}
+
+          <AdditionalImages
+            images={form.watch("images") ?? []}
+            onChange={(urls) =>
+              form.setValue("images", urls, { shouldValidate: true })
+            }
+          />
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">

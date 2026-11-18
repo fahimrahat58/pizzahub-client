@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   LayoutDashboard,
@@ -18,6 +18,7 @@ import { Brand } from "@/components/shared/ui-kit";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -36,6 +37,12 @@ const publicLinks = [
   { href: "/menu", label: "Browse Menu" },
 ];
 
+// Active-link styling used to depend on usePathname(). That URL hook requires a
+// Suspense boundary on dynamic routes under Cache Components; the public shell
+// is hidden on dashboards with CSS instead, so the header has no runtime URL read.
+const navLinkClass =
+  "rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground";
+
 const roleLinks: Record<UserRole, { href: string; label: string }[]> = {
   customer: [{ href: "/dashboard/customer#orders", label: "My Orders" }],
   vendor: [
@@ -50,15 +57,12 @@ const roleLinks: Record<UserRole, { href: string; label: string }[]> = {
 };
 
 export function SiteHeader() {
-  const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const { data: session, isPending } = authClient.useSession();
+  const { data: session } = authClient.useSession();
   const role = session?.user?.role as UserRole | undefined;
   const dashboard = dashboardForRole(role);
-
-  if (pathname.startsWith("/dashboard")) return null;
 
   const allLinks = [
     ...publicLinks,
@@ -79,12 +83,6 @@ export function SiteHeader() {
     }
   };
 
-  const linkClass = (href: string) =>
-    cn(
-      "rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground",
-      pathname === href.split("#")[0] && href === href.split("#")[0] && "bg-muted text-foreground",
-    );
-
   const followLink = (href: string) => {
     setOpen(false);
     const hash = href.includes("#") ? href.split("#")[1] : null;
@@ -101,7 +99,7 @@ export function SiteHeader() {
             <Link
               key={link.href}
               href={link.href}
-              className={linkClass(link.href)}
+              className={navLinkClass}
               onClick={() => followLink(link.href)}
             >
               {link.label}
@@ -110,9 +108,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
-          {isPending ? (
-            <div className="size-8 animate-pulse rounded-full bg-muted" />
-          ) : session?.user ? (
+          {session?.user ? (
             <DropdownMenu>
               <DropdownMenuTrigger
                 aria-label="Open profile menu"
@@ -135,14 +131,16 @@ export function SiteHeader() {
                 <ChevronDown className="size-4 text-muted-foreground" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel className="flex flex-col gap-0.5">
-                  <span className="truncate text-sm font-semibold text-foreground">
-                    {session.user.name}
-                  </span>
-                  <span className="truncate text-xs font-normal text-muted-foreground">
-                    {session.user.email}
-                  </span>
-                </DropdownMenuLabel>
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="flex flex-col gap-0.5">
+                    <span className="truncate text-sm font-semibold text-foreground">
+                      {session.user.name}
+                    </span>
+                    <span className="truncate text-xs font-normal text-muted-foreground">
+                      {session.user.email}
+                    </span>
+                  </DropdownMenuLabel>
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => router.push(dashboard)}>
                   <LayoutDashboard /> Dashboard
@@ -196,10 +194,7 @@ export function SiteHeader() {
                 key={link.href}
                 href={link.href}
                 onClick={() => followLink(link.href)}
-                className={cn(
-                  "rounded-md px-3 py-2.5 text-sm font-medium hover:bg-muted",
-                  pathname === link.href.split("#")[0] && link.href === link.href.split("#")[0] && "bg-muted",
-                )}
+                className="rounded-md px-3 py-2.5 text-sm font-medium hover:bg-muted"
               >
                 {link.label}
               </Link>

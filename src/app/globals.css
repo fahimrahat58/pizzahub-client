@@ -130,6 +130,12 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+  /* Dashboards render their own shell; hide the shared public chrome there
+     without reading the runtime pathname in the root header. */
+  body:has([data-dashboard-shell]) > header,
+  body:has([data-dashboard-shell]) > footer {
+    display: none;
+  }
   ::selection {
     background: color-mix(in oklch, var(--primary) 30%, transparent);
   }

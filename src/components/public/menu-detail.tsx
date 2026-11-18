@@ -26,6 +26,7 @@ import type {
   RestaurantSummaryDto,
   ReviewDto,
 } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 type ReviewWithAuthor = ReviewDto & { authorName: string; authorImage: string | null };
 
@@ -46,9 +47,10 @@ export function MenuDetail() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const id = params.id;
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending: sessionPending } = authClient.useSession();
 
   const [item, setItem] = useState<MenuItemDto | null>(null);
+  const [selectedImage, setSelectedImage] = useState(0);
   const [reviews, setReviews] = useState<ReviewWithAuthor[]>([]);
   const [restaurant, setRestaurant] = useState<RestaurantSummaryDto | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
@@ -83,6 +85,7 @@ export function MenuDetail() {
       ]);
       const loadedItem = itemResponse.item;
       setItem(loadedItem);
+      setSelectedImage(0);
       setReviews(reviewsResponse.reviews);
       setRestaurant(loadedItem.restaurant ?? null);
 
@@ -111,6 +114,14 @@ export function MenuDetail() {
   useEffect(() => {
     void loadItem();
   }, [loadItem]);
+
+  // The server guards this route too; this keeps the client state consistent
+  // if a session expires while the user is on the page.
+  useEffect(() => {
+    if (!sessionPending && !session?.user) {
+      router.push(`/login?next=${encodeURIComponent(`/menu/${id}`)}`);
+    }
+  }, [id, router, session?.user, sessionPending]);
 
   useEffect(() => {
     if (session?.user?.role !== "customer") return;
@@ -190,6 +201,8 @@ export function MenuDetail() {
   if (error || !item) return <ErrorState message={error || "Pizza not found"} />;
 
   const isOrderable = item.approvalStatus === "approved" && item.isActive;
+  const gallery = item.images?.length ? item.images : [item.image];
+  const activeImage = gallery[selectedImage] ?? gallery[0];
 
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-10 sm:px-6 lg:px-8">
@@ -199,17 +212,38 @@ export function MenuDetail() {
 
       <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-6">
-          <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-border/70 bg-muted">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={item.image} alt={item.name} className="size-full object-cover" />
-            <div className="absolute top-4 left-4">
-              <FavoriteButton
-                itemId={item.id}
-                variant="full"
-                initialFavorite={favoriteIds.has(item.id)}
-                onChanged={() => void loadFavoriteIds()}
-              />
+          <div className="space-y-3">
+            <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-border/70 bg-muted">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={activeImage} alt={item.name} className="size-full object-cover" />
+              <div className="absolute top-4 left-4">
+                <FavoriteButton
+                  itemId={item.id}
+                  variant="full"
+                  initialFavorite={favoriteIds.has(item.id)}
+                  onChanged={() => void loadFavoriteIds()}
+                />
+              </div>
             </div>
+            {gallery.length > 1 ? (
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {gallery.map((url, index) => (
+                  <button
+                    key={`${url}-${index}`}
+                    type="button"
+                    aria-label={`View photo ${index + 1}`}
+                    onClick={() => setSelectedImage(index)}
+                    className={cn(
+                      "size-16 shrink-0 overflow-hidden rounded-lg border-2 bg-muted transition",
+                      index === selectedImage ? "border-orange-500" : "border-transparent hover:border-border",
+                    )}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="" className="size-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
 
           <Card>
@@ -265,6 +299,12 @@ export function MenuDetail() {
                   </span>
                 ) : null}
               </div>
+            ) : null}
+            {item.vendorName ? (
+              <p className="text-sm text-muted-foreground">
+                Sold by{" "}
+                <span className="font-medium text-foreground/80">{item.vendorName}</span>
+              </p>
             ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-4 text-sm">

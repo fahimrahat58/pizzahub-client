@@ -217,6 +217,9 @@ export default function RegisterPage() {
               placeholder="At least 6 characters"
               {...register("password")}
             />
+            <p className="text-xs text-muted-foreground">
+              Use at least 6 characters with one uppercase and one lowercase letter.
+            </p>
             {errors.password ? (
               <p className="text-xs text-destructive">{errors.password.message}</p>
             ) : null}

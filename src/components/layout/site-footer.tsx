@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Facebook, Instagram, Mail, MapPin, Phone, Twitter, Youtube } from "lucide-react";
+import { AtSign, Camera, Globe, Mail, MapPin, Phone, Play } from "lucide-react";
 
 import { CurrentYear } from "@/components/layout/current-year";
 import { Brand } from "@/components/shared/ui-kit";
@@ -83,7 +83,7 @@ export function SiteFooter() {
                 aria-label="PizzaHub on Facebook"
                 className="rounded-md border border-border/70 p-2 transition hover:border-orange-500/60 hover:text-orange-500"
               >
-                <Facebook className="size-4" />
+                <Globe className="size-4" />
               </a>
               <a
                 href="https://instagram.com"
@@ -92,7 +92,7 @@ export function SiteFooter() {
                 aria-label="PizzaHub on Instagram"
                 className="rounded-md border border-border/70 p-2 transition hover:border-orange-500/60 hover:text-orange-500"
               >
-                <Instagram className="size-4" />
+                <Camera className="size-4" />
               </a>
               <a
                 href="https://x.com"
@@ -101,7 +101,7 @@ export function SiteFooter() {
                 aria-label="PizzaHub on X"
                 className="rounded-md border border-border/70 p-2 transition hover:border-orange-500/60 hover:text-orange-500"
               >
-                <Twitter className="size-4" />
+                <AtSign className="size-4" />
               </a>
               <a
                 href="https://youtube.com"
@@ -110,7 +110,7 @@ export function SiteFooter() {
                 aria-label="PizzaHub on YouTube"
                 className="rounded-md border border-border/70 p-2 transition hover:border-orange-500/60 hover:text-orange-500"
               >
-                <Youtube className="size-4" />
+                <Play className="size-4" />
               </a>
             </div>
           </div>
