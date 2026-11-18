@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Clock3, Loader2, MapPin, PackageCheck, Truck, XCircle } from "lucide-react";
+import { CheckCircle2, Clock3, Loader2, MapPin, PackageCheck, Star, Truck, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
+import { ReviewDialog } from "@/components/public/review-dialog";
 import {
   ConfirmDialog,
   OrderStatusBadge,
@@ -35,6 +36,7 @@ export function OrderCard({
 }) {
   const [action, setAction] = useState<"cancel" | "reject" | null>(null);
   const [pending, setPending] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
 
   const runAction = async (path: string, body?: unknown) => {
     setPending(true);
@@ -162,6 +164,12 @@ export function OrderCard({
           </Button>
         ) : null}
 
+        {role === "customer" && order.status === "delivered" ? (
+          <Button size="sm" variant="secondary" onClick={() => setReviewOpen(true)}>
+            <Star className="size-4 text-amber-500" /> Write a Review
+          </Button>
+        ) : null}
+
         {role === "vendor" && order.status === "pending" ? (
           <div className="flex flex-wrap gap-2">
             <Button size="sm" onClick={() => void runAction(`/api/orders/${order.id}/accept`)} disabled={pending}>
@@ -206,6 +214,15 @@ export function OrderCard({
           void runAction(`/api/orders/${order.id}/${action === "reject" ? "reject" : "cancel"}`);
         }}
       />
+
+      {role === "customer" && order.status === "delivered" ? (
+        <ReviewDialog
+          open={reviewOpen}
+          onOpenChange={setReviewOpen}
+          order={order}
+          onSaved={onChanged}
+        />
+      ) : null}
     </Card>
   );
 }

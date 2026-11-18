@@ -153,7 +153,10 @@ export function PizzaCard({
         </p>
         <div className="flex items-center justify-between pt-1 text-xs text-muted-foreground">
           <Badge variant="secondary">{item.category}</Badge>
-          <span className="flex items-center gap-1">
+          <span
+            className="flex items-center gap-1"
+            title={`5★ ${item.ratingDistribution["5"]} · 4★ ${item.ratingDistribution["4"]} · 3★ ${item.ratingDistribution["3"]} · 2★ ${item.ratingDistribution["2"]} · 1★ ${item.ratingDistribution["1"]}`}
+          >
             <Star className="size-3.5 fill-amber-400 text-amber-400" />
             {item.ratingAvg.toFixed(1)} ({item.reviewCount})
           </span>

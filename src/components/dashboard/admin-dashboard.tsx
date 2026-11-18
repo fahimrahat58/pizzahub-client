@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { AdminReviewsPanel } from "@/components/dashboard/admin-reviews-panel";
 import { ChartCard } from "@/components/dashboard/chart-card";
 import { OrderCard } from "@/components/dashboard/order-card";
 import { ProfilePanel } from "@/components/dashboard/profile-panel";
@@ -58,7 +59,7 @@ import type {
 import { cn } from "@/lib/utils";
 import { useHashTab } from "@/lib/use-hash-tab";
 
-const TABS = ["overview", "menu", "users", "billing", "orders", "profile"] as const;
+const TABS = ["overview", "menu", "users", "billing", "orders", "reviews", "profile"] as const;
 type Tab = (typeof TABS)[number];
 
 const tabLabels: Record<Tab, string> = {
@@ -67,6 +68,7 @@ const tabLabels: Record<Tab, string> = {
   users: "Users",
   billing: "Billing",
   orders: "Orders",
+  reviews: "Reviews",
   profile: "Profile",
 };
 
@@ -397,11 +399,19 @@ export function AdminDashboard() {
         ))}
       </div>
 
-      {coreLoading && tab !== "users" && tab !== "billing" && tab !== "profile" ? (
+      {coreLoading &&
+      tab !== "users" &&
+      tab !== "billing" &&
+      tab !== "reviews" &&
+      tab !== "profile" ? (
         <div className="flex items-center justify-center py-24 text-muted-foreground">
           <Loader2 className="mr-2 size-5 animate-spin" /> Loading admin data...
         </div>
-      ) : coreError && tab !== "users" && tab !== "billing" && tab !== "profile" ? (
+      ) : coreError &&
+        tab !== "users" &&
+        tab !== "billing" &&
+        tab !== "reviews" &&
+        tab !== "profile" ? (
         <ErrorState message={coreError} onRetry={() => void loadCore()} />
       ) : tab === "overview" ? (
         <div className="space-y-6">
@@ -887,6 +897,8 @@ export function AdminDashboard() {
         ) : (
           <EmptyState title="No orders yet" description="Customer orders will appear here." />
         )
+      ) : tab === "reviews" ? (
+        <AdminReviewsPanel />
       ) : (
         <ProfilePanel role="admin" />
       )}

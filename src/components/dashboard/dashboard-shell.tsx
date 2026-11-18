@@ -14,6 +14,7 @@ import {
   PieChart,
   Pizza,
   Settings,
+  Star,
   Store,
   Sparkles,
   UsersRound,
@@ -54,6 +55,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { href: "/dashboard/vendor/restaurant", label: "My Restaurant", icon: Store },
     { href: "/dashboard/vendor/menu", label: "My Menu", icon: Pizza },
     { href: "/dashboard/vendor/orders", label: "Orders", icon: ClipboardList },
+    { href: "/dashboard/vendor/reviews", label: "Reviews", icon: Star },
     { href: "/dashboard/vendor/profile", label: "Profile", icon: Settings },
     { href: "/dashboard/vendor/subscription", label: "Subscription", icon: Sparkles },
   ],
@@ -63,6 +65,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { hash: "users", label: "Users", icon: UsersRound },
     { hash: "billing", label: "Billing", icon: CreditCard },
     { hash: "orders", label: "Orders", icon: ClipboardList },
+    { hash: "reviews", label: "Reviews", icon: Star },
     { hash: "profile", label: "Profile", icon: Settings },
   ],
 };

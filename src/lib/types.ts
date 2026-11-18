@@ -119,6 +119,8 @@ export interface MenuItemDto {
   rejectionReason: string | null;
   ratingAvg: number;
   reviewCount: number;
+  /** Server-computed 5/4/3/2/1-star totals, never supplied by the client. */
+  ratingDistribution: RatingDistribution;
   createdAt: string;
   updatedAt: string;
 }
@@ -171,18 +173,41 @@ export interface OrderDto {
   updatedAt: string;
 }
 
+export type RatingDistribution = Record<"1" | "2" | "3" | "4" | "5", number>;
+
 export interface ReviewDto {
   id: string;
-  customerId: string;
+  /** Only present in authenticated/private admin and owner views. */
+  customerId?: string;
+  /** Snapshot taken from the authenticated user when the review was created. */
+  customerName?: string | null;
   menuItemId: string | null;
   restaurantId: string | null;
   orderId: string;
   rating: number;
   comment: string;
-  authorName?: string;
+  authorName?: string | null;
   authorImage?: string | null;
+  /** Only present in admin/vendor moderation views. */
+  isHidden?: boolean;
+  customerEmail?: string | null;
+  productName?: string | null;
+  restaurantName?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ReviewSummary {
+  ratingAvg: number;
+  reviewCount: number;
+  ratingDistribution: RatingDistribution;
+}
+
+export interface ReviewListResponse {
+  success: boolean;
+  reviews: ReviewDto[];
+  summary?: ReviewSummary;
+  pagination: Pagination;
 }
 
 export interface Pagination {

@@ -106,6 +106,11 @@ export function HomeContent() {
   const [error, setError] = useState("");
   const loadRef = useRef<() => void>(() => undefined);
 
+  const ratedItems = popular.filter((item) => item.reviewCount > 0);
+  const averageRating = ratedItems.length
+    ? (ratedItems.reduce((sum, item) => sum + item.ratingAvg, 0) / ratedItems.length).toFixed(1)
+    : "—";
+
   useEffect(() => {
     let active = true;
 
@@ -181,7 +186,7 @@ export function HomeContent() {
             </div>
             <div className="flex flex-wrap gap-x-8 gap-y-3 pt-4 text-sm text-muted-foreground">
               <span><strong className="text-foreground">100+</strong> pizzas</span>
-              <span><strong className="text-foreground">4.8/5</strong> average rating</span>
+              <span><strong className="text-foreground">{averageRating}/5</strong> top-rated average</span>
               <span><strong className="text-foreground">Live</strong> order tracking</span>
             </div>
           </Reveal>

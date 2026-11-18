@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { FavoriteButton } from "@/components/public/cards";
+import { ProductReviews } from "@/components/public/product-reviews";
 import { ApprovalBadge, ErrorState, LinkButton, PageHeader } from "@/components/shared/ui-kit";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,26 +22,16 @@ import { apiFetch, publicApi } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import type {
   MenuItemDto,
-  OrderDto,
   RestaurantDto,
   RestaurantSummaryDto,
-  ReviewDto,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-type ReviewWithAuthor = ReviewDto & { authorName: string; authorImage: string | null };
 
 const orderSchema = z.object({
   quantity: z.number().int().min(1).max(20),
   deliveryAddress: z.string().trim().min(10, "Enter a complete delivery address").max(300),
   deliveryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a delivery date"),
   message: z.string().trim().max(500).optional(),
-});
-
-const reviewSchema = z.object({
-  orderId: z.string().min(1, "Select a delivered order"),
-  rating: z.number().int().min(1).max(5),
-  comment: z.string().trim().min(3, "Add a short comment").max(1000),
 });
 
 export function MenuDetail() {
@@ -51,10 +42,8 @@ export function MenuDetail() {
 
   const [item, setItem] = useState<MenuItemDto | null>(null);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [reviews, setReviews] = useState<ReviewWithAuthor[]>([]);
   const [restaurant, setRestaurant] = useState<RestaurantSummaryDto | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
-  const [deliveredOrders, setDeliveredOrders] = useState<OrderDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -68,25 +57,16 @@ export function MenuDetail() {
     },
   });
 
-  const reviewForm = useForm<z.infer<typeof reviewSchema>>({
-    resolver: zodResolver(reviewSchema),
-    defaultValues: { orderId: "", rating: 5, comment: "" },
-  });
-
   const loadItem = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const [itemResponse, reviewsResponse] = await Promise.all([
-        publicApi<{ success: boolean; item: MenuItemDto }>(`/api/menu/${id}`),
-        publicApi<{ success: boolean; reviews: ReviewWithAuthor[] }>(
-          `/api/reviews/${id}?limit=20`,
-        ),
-      ]);
+      const itemResponse = await publicApi<{ success: boolean; item: MenuItemDto }>(
+        `/api/menu/${id}`,
+      );
       const loadedItem = itemResponse.item;
       setItem(loadedItem);
       setSelectedImage(0);
-      setReviews(reviewsResponse.reviews);
       setRestaurant(loadedItem.restaurant ?? null);
 
       if (!loadedItem.restaurant && loadedItem.restaurantId) {
@@ -126,22 +106,6 @@ export function MenuDetail() {
     }
   }, [id, router, session?.user, sessionPending]);
 
-  useEffect(() => {
-    if (session?.user?.role !== "customer") return;
-    apiFetch<{ success: boolean; orders: OrderDto[] }>("/api/orders/my?limit=100")
-      .then((data) =>
-        setDeliveredOrders(
-          data.orders.filter(
-            (order) => order.status === "delivered" && order.menuItemId === id,
-          ),
-        ),
-      )
-      .catch(() => {
-        setDeliveredOrders([]);
-        toast.error("Could not load your delivered orders for reviews.");
-      });
-  }, [id, session?.user?.role]);
-
   const loadFavoriteIds = useCallback(async () => {
     if (session?.user?.role !== "customer") {
       setFavoriteIds(new Set());
@@ -159,11 +123,6 @@ export function MenuDetail() {
   useEffect(() => {
     void loadFavoriteIds();
   }, [loadFavoriteIds, id]);
-
-  const availableOrders = useMemo(() => {
-    const reviewedOrderIds = new Set(reviews.map((review) => review.orderId));
-    return deliveredOrders.filter((order) => !reviewedOrderIds.has(order.id));
-  }, [deliveredOrders, reviews]);
 
   const placeOrder = async (values: z.infer<typeof orderSchema>) => {
     try {
@@ -184,20 +143,6 @@ export function MenuDetail() {
     }
   };
 
-  const submitReview = async (values: z.infer<typeof reviewSchema>) => {
-    try {
-      await apiFetch("/api/reviews", {
-        method: "POST",
-        body: { ...values, menuItemId: id },
-      });
-      toast.success("Thanks for your review!");
-      reviewForm.reset({ orderId: "", rating: 5, comment: "" });
-      await loadItem();
-    } catch (reviewError) {
-      toast.error(reviewError instanceof Error ? reviewError.message : "Could not publish review");
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24 text-muted-foreground">
@@ -210,6 +155,10 @@ export function MenuDetail() {
   const isOrderable = item.approvalStatus === "approved" && item.isActive;
   const gallery = item.images?.length ? item.images : [item.image];
   const activeImage = gallery[selectedImage] ?? gallery[0];
+  const distribution = item.ratingDistribution;
+  const distributionTitle = distribution
+    ? `5★ ${distribution["5"]} · 4★ ${distribution["4"]} · 3★ ${distribution["3"]} · 2★ ${distribution["2"]} · 1★ ${distribution["1"]}`
+    : undefined;
 
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-10 sm:px-6 lg:px-8">
@@ -316,7 +265,10 @@ export function MenuDetail() {
           </div>
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <span className="text-2xl font-bold text-orange-500">${item.price.toFixed(2)}</span>
-            <span className="flex items-center gap-1 text-muted-foreground">
+            <span
+              className="flex items-center gap-1 text-muted-foreground"
+              title={distributionTitle}
+            >
               <Star className="size-4 fill-amber-400 text-amber-400" />
               {item.ratingAvg.toFixed(1)} · {item.reviewCount} reviews
             </span>
@@ -416,82 +368,7 @@ export function MenuDetail() {
             </Card>
           )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Reviews</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              {reviews.length ? (
-                reviews.map((review) => (
-                  <div key={review.id} className="space-y-1 border-b border-border/70 pb-4 last:border-0 last:pb-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-semibold">{review.authorName}</span>
-                      <span className="flex items-center gap-0.5 text-amber-500">
-                        {Array.from({ length: review.rating }).map((_, index) => (
-                          <Star key={index} className="size-3.5 fill-current" />
-                        ))}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{review.comment}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(review.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">No reviews yet. Be the first!</p>
-              )}
-
-              {session?.user?.role === "customer" && availableOrders.length ? (
-                <form
-                  onSubmit={reviewForm.handleSubmit((values) => void submitReview(values))}
-                  className="space-y-3 rounded-xl border border-border bg-muted/20 p-4"
-                >
-                  <p className="text-sm font-semibold">Review a delivered order</p>
-                  <div className="space-y-2">
-                    <Label htmlFor="reviewOrder">Order</Label>
-                    <select
-                      id="reviewOrder"
-                      className="h-9 w-full rounded-md border border-input bg-transparent px-2.5 text-sm dark:bg-input/30"
-                      {...reviewForm.register("orderId")}
-                    >
-                      <option value="">Select an order</option>
-                      {availableOrders.map((order) => (
-                        <option key={order.id} value={order.id}>
-                          {order.orderNumber} · {new Date(order.deliveryDate).toLocaleDateString()}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="rating">Rating</Label>
-                    <select
-                      id="rating"
-                      className="h-9 w-full rounded-md border border-input bg-transparent px-2.5 text-sm dark:bg-input/30"
-                      {...reviewForm.register("rating", { valueAsNumber: true })}
-                    >
-                      {[5, 4, 3, 2, 1].map((value) => (
-                        <option key={value} value={value}>{value} stars</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="comment">Your review</Label>
-                    <Textarea id="comment" placeholder="How was it?" {...reviewForm.register("comment")} />
-                    {reviewForm.formState.errors.comment ? (
-                      <p className="text-xs text-destructive">{reviewForm.formState.errors.comment.message}</p>
-                    ) : null}
-                  </div>
-                  <Button type="submit" disabled={reviewForm.formState.isSubmitting}>
-                    {reviewForm.formState.isSubmitting ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : null}
-                    Publish review
-                  </Button>
-                </form>
-              ) : null}
-            </CardContent>
-          </Card>
+          <ProductReviews menuItemId={id} onChanged={() => void loadItem()} />
         </div>
       </div>
     </main>
