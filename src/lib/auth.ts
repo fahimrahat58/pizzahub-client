@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { jwt } from "better-auth/plugins";
-import { db } from "@/lib/mongodb";
+import { getDb } from "@/lib/mongodb";
 
 const authURL = process.env.BETTER_AUTH_URL;
 
@@ -12,6 +12,10 @@ if (!authURL) {
 
 const frontendURL = process.env.FRONTEND_URL ?? authURL;
 const isSecure = authURL.startsWith("https://");
+
+// Resolve the shared MongoDB connection before creating the adapter so Better
+// Auth never receives a Db backed by a closed or unconnected client.
+const db = await getDb();
 
 const googleProvider =
   process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET

@@ -1,4 +1,3 @@
-
 import { MongoClient } from "mongodb";
 
 const uri = process.env.MONGODB_URI;
@@ -16,14 +15,35 @@ const globalForMongo = globalThis as typeof globalThis & {
   mongoClientPromise?: Promise<MongoClient>;
 };
 
-const client = new MongoClient(uri);
+const createClientPromise = () => {
+  const client = new MongoClient(uri);
+  const promise = client.connect();
 
-const clientPromise =
-  globalForMongo.mongoClientPromise ?? client.connect();
+  // A failed initial connect leaves the driver topology closed. Drop the
+  // cached promise so the next attempt creates a fresh client instead of
+  // reusing a poisoned topology.
+  void promise.catch(() => {
+    if (globalForMongo.mongoClientPromise === promise) {
+      globalForMongo.mongoClientPromise = undefined;
+    }
+  });
 
-if (process.env.NODE_ENV !== "production") {
-  globalForMongo.mongoClientPromise = clientPromise;
-}
+  return promise;
+};
 
-export const db = client.db(dbName);
+const getClientPromise = () => {
+  if (!globalForMongo.mongoClientPromise) {
+    globalForMongo.mongoClientPromise = createClientPromise();
+  }
+
+  return globalForMongo.mongoClientPromise;
+};
+
+const clientPromise = getClientPromise();
+
+export const getDb = async () => {
+  const client = await getClientPromise();
+  return client.db(dbName);
+};
+
 export { clientPromise };
