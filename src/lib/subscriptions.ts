@@ -7,6 +7,9 @@ import type {
   SubscriptionStatusDto,
 } from "@/lib/types";
 
+export const FREE_RESTAURANT_LIMIT_MESSAGE =
+  "You have reached the maximum limit of 3 restaurants. Upgrade to Premium to add more restaurants.";
+
 export const getSubscriptionStatus = () =>
   apiFetch<{ success: boolean; subscription: SubscriptionStatusDto }>(
     "/api/subscriptions/status",

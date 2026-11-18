@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Pencil, Plus, Store, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { DeleteRestaurantDialog } from "@/components/dashboard/delete-restaurant-dialog";
 import { MenuFormDialog } from "@/components/dashboard/menu-form-dialog";
@@ -15,16 +16,24 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { apiFetch } from "@/lib/api";
+import {
+  FREE_RESTAURANT_LIMIT_MESSAGE,
+  getSubscriptionStatus,
+} from "@/lib/subscriptions";
 import type {
   ListResponse,
   MenuItemDto,
   RestaurantDto,
+  SubscriptionStatusDto,
 } from "@/lib/types";
 
 export function VendorRestaurantsPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
   const [menu, setMenu] = useState<MenuItemDto[]>([]);
+  const [subscription, setSubscription] =
+    useState<SubscriptionStatusDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [formOpen, setFormOpen] = useState(false);
@@ -37,19 +46,21 @@ export function VendorRestaurantsPage() {
     setLoading(true);
     setError("");
     try {
-      const [restaurantData, menuData] = await Promise.all([
+      const [restaurantData, menuData, subscriptionData] = await Promise.all([
         apiFetch<{
           success: boolean;
           restaurants: RestaurantDto[];
           restaurant: RestaurantDto | null;
         }>("/api/restaurants/mine"),
         apiFetch<ListResponse<MenuItemDto>>("/api/menu/vendor/mine?limit=100"),
+        getSubscriptionStatus(),
       ]);
       setRestaurants(
         restaurantData.restaurants ??
           (restaurantData.restaurant ? [restaurantData.restaurant] : []),
       );
       setMenu(menuData.items);
+      setSubscription(subscriptionData.subscription);
     } catch (loadError) {
       setError(
         loadError instanceof Error ? loadError.message : "Could not load restaurants",
@@ -63,18 +74,35 @@ export function VendorRestaurantsPage() {
     void Promise.resolve().then(load);
   }, [load]);
 
-  useEffect(() => {
-    if (searchParams.get("new") === "1" && !autoOpened.current) {
-      autoOpened.current = true;
-      setEditing(null);
-      setFormOpen(true);
-    }
-  }, [searchParams]);
+  const showLimitToast = useCallback(() => {
+    toast.warning(FREE_RESTAURANT_LIMIT_MESSAGE, {
+      action: {
+        label: "Upgrade to Premium",
+        onClick: () => router.push("/dashboard/vendor/subscription"),
+      },
+    });
+  }, [router]);
 
-  const openCreate = () => {
+  const restaurantLimit = subscription?.activeRestaurantLimit ?? 3;
+  const atRestaurantLimit =
+    restaurantLimit !== null && restaurants.length >= restaurantLimit;
+
+  const openCreate = useCallback(() => {
+    if (atRestaurantLimit) {
+      showLimitToast();
+      return;
+    }
     setEditing(null);
     setFormOpen(true);
-  };
+  }, [atRestaurantLimit, showLimitToast]);
+
+  useEffect(() => {
+    if (loading || autoOpened.current) return;
+    if (searchParams.get("new") === "1") {
+      autoOpened.current = true;
+      queueMicrotask(openCreate);
+    }
+  }, [loading, searchParams, openCreate]);
   const openEdit = (restaurant: RestaurantDto) => {
     setEditing(restaurant);
     setFormOpen(true);
@@ -173,6 +201,7 @@ export function VendorRestaurantsPage() {
         onOpenChange={setFormOpen}
         restaurant={editing}
         onSaved={() => void load()}
+        onLimitReached={showLimitToast}
       />
       <DeleteRestaurantDialog
         restaurant={deleting}

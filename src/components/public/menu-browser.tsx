@@ -11,6 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { publicApi, apiFetch } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
+import {
+  canonicalizeCategory,
+  MENU_CATEGORIES,
+  mergeCategories,
+} from "@/lib/categories";
 import type { ListResponse, MenuItemDto, RestaurantDto } from "@/lib/types";
 
 type Filters = {
@@ -35,7 +40,7 @@ export function MenuBrowser() {
     restaurantId: "",
   });
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>([...MENU_CATEGORIES]);
   const [locations, setLocations] = useState<string[]>([]);
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
   const [items, setItems] = useState<MenuItemDto[]>([]);
@@ -52,10 +57,11 @@ export function MenuBrowser() {
       setFilters((current) => ({
         ...current,
         search: params.get("search") ?? current.search,
-        category: params.get("category") ?? "",
+        category: params.get("category")?.trim() ?? "",
         location: params.get("location") ?? "",
         vendorId: params.get("vendorId") ?? "",
         restaurantId: params.get("restaurantId") ?? "",
+        sort: params.get("sort") ?? current.sort,
       }));
       setReady(true);
     });
@@ -67,10 +73,19 @@ export function MenuBrowser() {
   }, [filters.search]);
 
   useEffect(() => {
+    queueMicrotask(() => {
+      setFilters((current) => {
+        const category = canonicalizeCategory(current.category, categories);
+        return category === current.category ? current : { ...current, category };
+      });
+    });
+  }, [categories]);
+
+  useEffect(() => {
     publicApi<{ success: boolean; categories: string[] }>("/api/menu/categories")
-      .then((data) => setCategories(data.categories))
+      .then((data) => setCategories(mergeCategories(data.categories)))
       .catch(() => {
-        setCategories([]);
+        setCategories([...MENU_CATEGORIES]);
         toast.error("Could not load menu categories");
       });
     publicApi<{ success: boolean; locations: string[] }>("/api/menu/locations")
@@ -144,9 +159,27 @@ export function MenuBrowser() {
     if (ready) void Promise.resolve().then(load);
   }, [load, ready]);
 
+  const syncUrl = (next: Filters) => {
+    const params = new URLSearchParams();
+    if (next.search) params.set("search", next.search);
+    if (next.category) params.set("category", next.category);
+    if (next.location) params.set("location", next.location);
+    if (next.vendorId) params.set("vendorId", next.vendorId);
+    if (next.restaurantId) params.set("restaurantId", next.restaurantId);
+    if (next.sort !== "newest") params.set("sort", next.sort);
+    const query = params.toString();
+    window.history.replaceState(
+      null,
+      "",
+      query ? `${window.location.pathname}?${query}` : window.location.pathname,
+    );
+  };
+
   const updateFilter = <K extends keyof Filters>(key: K, value: Filters[K]) => {
-    setFilters((current) => ({ ...current, [key]: value }));
+    const next = { ...filters, [key]: value };
+    setFilters(next);
     setPage(1);
+    syncUrl(next);
   };
 
   return (
@@ -172,9 +205,9 @@ export function MenuBrowser() {
               id="category"
               value={filters.category}
               onChange={(event) => updateFilter("category", event.target.value)}
-              className="h-9 w-full rounded-md border border-input bg-transparent px-2.5 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+              className="h-9 w-full rounded-md border border-input bg-transparent px-2.5 text-sm text-foreground shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
             >
-              <option value="">All categories</option>
+              <option value="">All Categories</option>
               {categories.map((category) => (
                 <option key={category} value={category}>
                   {category}
@@ -188,7 +221,7 @@ export function MenuBrowser() {
               id="location"
               value={filters.location}
               onChange={(event) => updateFilter("location", event.target.value)}
-              className="h-9 w-full rounded-md border border-input bg-transparent px-2.5 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+              className="h-9 w-full rounded-md border border-input bg-transparent px-2.5 text-sm text-foreground shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
             >
               <option value="">All locations</option>
               {locations.map((location) => (
@@ -204,7 +237,7 @@ export function MenuBrowser() {
               id="restaurant"
               value={filters.restaurantId}
               onChange={(event) => updateFilter("restaurantId", event.target.value)}
-              className="h-9 w-full rounded-md border border-input bg-transparent px-2.5 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+              className="h-9 w-full rounded-md border border-input bg-transparent px-2.5 text-sm text-foreground shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
             >
               <option value="">All restaurants</option>
               {restaurants.map((restaurant) => (
@@ -220,7 +253,7 @@ export function MenuBrowser() {
               id="sort"
               value={filters.sort}
               onChange={(event) => updateFilter("sort", event.target.value)}
-              className="h-9 w-full rounded-md border border-input bg-transparent px-2.5 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+              className="h-9 w-full rounded-md border border-input bg-transparent px-2.5 text-sm text-foreground shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
             >
               <option value="newest">Newest</option>
               <option value="rating">Top rated</option>
@@ -231,21 +264,36 @@ export function MenuBrowser() {
           <Button
             variant="outline"
             onClick={() => {
-              setFilters({
+              const cleared: Filters = {
                 search: "",
                 category: "",
                 location: "",
                 sort: "newest",
                 vendorId: "",
                 restaurantId: "",
-              });
+              };
+              setFilters(cleared);
               setDebouncedSearch("");
               setPage(1);
+              syncUrl(cleared);
             }}
           >
             <SlidersHorizontal className="size-4" /> Reset
           </Button>
         </div>
+        {filters.category ? (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Category:{" "}
+            <span className="font-semibold text-foreground">{filters.category}</span>{" "}
+            <button
+              type="button"
+              onClick={() => updateFilter("category", "")}
+              className="font-semibold text-orange-500 hover:underline"
+            >
+              Clear
+            </button>
+          </p>
+        ) : null}
         {filters.vendorId || filters.restaurantId || filters.location || filters.category ? (
           <p className="mt-3 text-xs text-muted-foreground">
             Filters are active. Use Reset to see everything.

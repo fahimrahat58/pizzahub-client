@@ -10,6 +10,7 @@ import {
   ChefHat,
   Clock3,
   Heart,
+  LayoutGrid,
   Leaf,
   Pizza,
   Search,
@@ -17,12 +18,14 @@ import {
   Sparkles,
   Truck,
   UtensilsCrossed,
+  type LucideIcon,
 } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
 
 import { PizzaCard, RestaurantCard } from "@/components/public/cards";
 import { EmptyState, ErrorState, LinkButton } from "@/components/shared/ui-kit";
+import { MENU_CATEGORIES, type MenuCategory } from "@/lib/categories";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { publicApi } from "@/lib/api";
@@ -34,14 +37,25 @@ const steps = [
   { icon: Truck, title: "Track delivery", text: "Follow your order from prep to door." },
 ];
 
-const categories = [
-  { name: "Classic Pizzas", icon: Pizza, description: "The timeless favourites" },
-  { name: "Vegetarian Pizzas", icon: Leaf, description: "Fresh from the garden" },
-  { name: "Meat Lovers", icon: Beef, description: "Loaded with protein" },
-  { name: "Specialty / Gourmet Pizzas", icon: Sparkles, description: "Something a little different" },
-  { name: "Sides & Appetizers", icon: UtensilsCrossed, description: "Perfect for sharing" },
-  { name: "Beverages & Desserts", icon: CakeSlice, description: "Finish on a sweet note" },
-];
+const categoryDetails: Record<
+  MenuCategory,
+  { icon: LucideIcon; description: string }
+> = {
+  "Classic Pizzas": { icon: Pizza, description: "The timeless favourites" },
+  "Vegetarian Pizzas": { icon: Leaf, description: "Fresh from the garden" },
+  "Meat Lovers": { icon: Beef, description: "Loaded with protein" },
+  "Specialty / Gourmet Pizzas": {
+    icon: Sparkles,
+    description: "Something a little different",
+  },
+  "Sides & Appetizers": { icon: UtensilsCrossed, description: "Perfect for sharing" },
+  "Beverages & Desserts": { icon: CakeSlice, description: "Finish on a sweet note" },
+};
+
+const categories = MENU_CATEGORIES.map((name) => ({
+  name,
+  ...categoryDetails[name],
+}));
 
 const benefits = [
   {
@@ -232,8 +246,24 @@ export function HomeContent() {
             <h2 className="mt-2 text-3xl font-bold tracking-tight">Pizza Categories</h2>
           </Reveal>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Reveal>
+              <Link
+                href="/menu"
+                aria-current="page"
+                className="card-hover group flex h-full items-center gap-4 rounded-2xl border border-orange-500/70 bg-orange-500/10 p-5 shadow-sm"
+              >
+                <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white">
+                  <LayoutGrid className="size-6" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block font-semibold">All Categories</span>
+                  <span className="block text-sm text-muted-foreground">Browse the full menu</span>
+                </span>
+                <ArrowRight className="ml-auto size-4 shrink-0 text-orange-500" />
+              </Link>
+            </Reveal>
             {categories.map(({ name, icon: Icon, description }, index) => (
-              <Reveal key={name} delay={index * 0.04}>
+              <Reveal key={name} delay={(index + 1) * 0.04}>
                 <Link
                   href={`/menu?category=${encodeURIComponent(name)}`}
                   className="card-hover group flex h-full items-center gap-4 rounded-2xl border border-border/70 bg-card p-5 shadow-sm"

@@ -49,6 +49,7 @@ export interface SubscriptionStatusDto {
   status: SubscriptionStatus;
   isPremium: boolean;
   activeItemLimit: number | null;
+  activeRestaurantLimit: number | null;
   stripeCustomerId: string | null;
   stripeSubscriptionId: string | null;
   subscriptionExpiresAt: string | null;

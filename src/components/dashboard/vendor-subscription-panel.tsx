@@ -48,12 +48,14 @@ const statusLabels: Record<SubscriptionStatus, string> = {
 
 const freeFeatures = [
   "Max 3 active menu items",
+  "Max 3 restaurants",
   "Basic vendor dashboard",
   "Order management",
 ];
 
 const premiumFeatures = [
   "Unlimited active items",
+  "Unlimited restaurants",
   "Premium vendor badge",
   "Featured menu placement",
   "All Free features",

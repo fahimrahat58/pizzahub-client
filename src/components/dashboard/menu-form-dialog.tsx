@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { apiFetch, uploadImage } from "@/lib/api";
+import { MENU_CATEGORIES, type MenuCategory } from "@/lib/categories";
 import type { MenuItemDto, RestaurantDto } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +38,6 @@ const menuSchema = z.object({
   category: z.string().trim().min(2).max(40),
   price: z.number().positive("Price must be greater than 0").max(1000),
   ingredients: z.string().trim().min(1, "Add at least one ingredient"),
-  location: z.string().trim().min(2, "Enter the area or city").max(100),
   image: z.url("Upload a menu image"),
   images: z.array(z.url()).max(5).optional(),
   isActive: z.boolean(),
@@ -46,7 +46,7 @@ const menuSchema = z.object({
 type MenuValues = z.infer<typeof menuSchema>;
 
 const selectClass =
-  "h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-2.5 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
+  "h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-2.5 py-1 text-sm text-foreground shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
 
 function AdditionalImages({
   images,
@@ -146,10 +146,9 @@ export function MenuFormDialog({
       restaurantId: "",
       name: "",
       description: "",
-      category: "Pizza",
+      category: MENU_CATEGORIES[0],
       price: 12,
       ingredients: "",
-      location: "",
       image: "",
       images: [],
       isActive: false,
@@ -167,10 +166,9 @@ export function MenuFormDialog({
       restaurantId: preferred,
       name: item?.name ?? "",
       description: item?.description ?? "",
-      category: item?.category ?? "Pizza",
+      category: item?.category ?? MENU_CATEGORIES[0],
       price: item?.price ?? 12,
       ingredients: item?.ingredients.join(", ") ?? "",
-      location: item?.location ?? "",
       image: item?.image ?? "",
       images: (item?.images ?? (item ? [item.image] : [])).slice(1),
       isActive: item?.isActive ?? false,
@@ -190,7 +188,6 @@ export function MenuFormDialog({
         .split(",")
         .map((part) => part.trim())
         .filter(Boolean),
-      location: values.location,
       image: values.image,
       images: [values.image, ...(values.images ?? [])],
       isActive: values.isActive,
@@ -215,6 +212,13 @@ export function MenuFormDialog({
       toast.error(error instanceof Error ? error.message : "Could not save pizza");
     }
   };
+
+  // Existing items may use a legacy category; keep it selectable so Edit shows
+  // the stored value instead of a blank dropdown.
+  const categoryOptions: string[] =
+    item?.category && !MENU_CATEGORIES.includes(item.category as MenuCategory)
+      ? [...MENU_CATEGORIES, item.category]
+      : [...MENU_CATEGORIES];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -280,7 +284,18 @@ export function MenuFormDialog({
             </div>
             <div className="space-y-2">
               <Label htmlFor="menuCategory">Category</Label>
-              <Input id="menuCategory" {...form.register("category")} />
+              <select
+                id="menuCategory"
+                className={selectClass}
+                aria-invalid={!!form.formState.errors.category}
+                {...form.register("category")}
+              >
+                {categoryOptions.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
               {form.formState.errors.category ? (
                 <p className="text-xs text-destructive">
                   {form.formState.errors.category.message}
@@ -328,20 +343,6 @@ export function MenuFormDialog({
                 </p>
               ) : null}
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="menuLocation">Location (area / city)</Label>
-            <Input
-              id="menuLocation"
-              placeholder="e.g. Downtown, Dhaka"
-              {...form.register("location")}
-            />
-            {form.formState.errors.location ? (
-              <p className="text-xs text-destructive">
-                {form.formState.errors.location.message}
-              </p>
-            ) : null}
           </div>
 
           {item && item.approvalStatus === "approved" ? (

@@ -167,8 +167,10 @@ export function VendorMenuPage() {
                   <div className="min-w-0">
                     <h3 className="truncate font-semibold">{item.name}</h3>
                     <p className="truncate text-xs text-muted-foreground">
-                      {item.category} · {item.location || "Location not set"} ·{" "}
-                      {item.restaurant?.name ?? "Unassigned"}
+                      {item.category} ·{" "}
+                      {item.restaurant
+                        ? `${item.restaurant.name} · ${item.restaurant.address}`
+                        : "Unassigned"}
                     </p>
                   </div>
                   <span className="font-bold text-orange-500">${item.price.toFixed(2)}</span>

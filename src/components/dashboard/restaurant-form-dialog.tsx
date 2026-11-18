@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { apiFetch } from "@/lib/api";
+import { FREE_RESTAURANT_LIMIT_MESSAGE } from "@/lib/subscriptions";
 import type { RestaurantDto } from "@/lib/types";
 
 const restaurantSchema = z.object({
@@ -67,11 +68,13 @@ export function RestaurantFormDialog({
   onOpenChange,
   restaurant,
   onSaved,
+  onLimitReached,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   restaurant?: RestaurantDto | null;
   onSaved: (restaurant: RestaurantDto, created: boolean) => void;
+  onLimitReached?: () => void;
 }) {
   const form = useForm<RestaurantValues>({
     resolver: zodResolver(restaurantSchema),
@@ -107,9 +110,13 @@ export function RestaurantFormDialog({
       onSaved(data.restaurant, created);
       onOpenChange(false);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Could not save restaurant",
-      );
+      const message =
+        error instanceof Error ? error.message : "Could not save restaurant";
+      if (message === FREE_RESTAURANT_LIMIT_MESSAGE && onLimitReached) {
+        onLimitReached();
+        return;
+      }
+      toast.error(message);
     }
   };
 
