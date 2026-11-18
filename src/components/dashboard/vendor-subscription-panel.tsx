@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   CalendarClock,
@@ -26,6 +26,7 @@ import {
   createCheckoutSession,
   createPortalSession,
   getPlans,
+  getPurchasedBillingInterval,
   getSubscriptionStatus,
 } from "@/lib/subscriptions";
 import type {
@@ -35,6 +36,8 @@ import type {
   SubscriptionStatusDto,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+type PanelAction = BillingPlan | "portal" | "refresh";
 
 const statusLabels: Record<SubscriptionStatus, string> = {
   active: "Active",
@@ -89,7 +92,20 @@ export function VendorSubscriptionPanel() {
   const [billing, setBilling] = useState<BillingPlan>("monthly");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [action, setAction] = useState<BillingPlan | "portal" | "refresh" | null>(null);
+  const [action, setAction] = useState<PanelAction | null>(null);
+  const actionRef = useRef<PanelAction | null>(null);
+
+  const beginAction = useCallback((next: PanelAction) => {
+    if (actionRef.current) return false;
+    actionRef.current = next;
+    setAction(next);
+    return true;
+  }, []);
+
+  const endAction = useCallback(() => {
+    actionRef.current = null;
+    setAction(null);
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -100,13 +116,6 @@ export function VendorSubscriptionPanel() {
         getPlans(),
       ]);
       setSubscription(statusResult.subscription);
-      if (statusResult.subscription.billingInterval) {
-        // Align the selector with the purchased cycle; it is still only a
-        // future-purchase choice, never the source of truth for current plan.
-        setBilling(
-          statusResult.subscription.billingInterval === "year" ? "yearly" : "monthly",
-        );
-      }
       setPlans(plansResult.plans);
       setConfigured(plansResult.configured);
     } catch (loadError) {
@@ -127,11 +136,6 @@ export function VendorSubscriptionPanel() {
   const fetchStatus = useCallback(async () => {
     const result = await getSubscriptionStatus();
     setSubscription(result.subscription);
-    if (result.subscription.billingInterval) {
-      setBilling(
-        result.subscription.billingInterval === "year" ? "yearly" : "monthly",
-      );
-    }
     return result.subscription;
   }, []);
 
@@ -144,16 +148,25 @@ export function VendorSubscriptionPanel() {
         void fetchStatus().catch(() => undefined);
       }
     };
+    // A back/forward-cache restore can keep React state from before the portal
+    // redirect, including a stuck "portal" action. Clear it as soon as the
+    // restored page is shown, then re-read the backend state.
+    const handlePageShow = (event: PageTransitionEvent) => {
+      endAction();
+      if (event.persisted) void fetchStatus().catch(() => undefined);
+    };
     window.addEventListener("focus", refreshWhenVisible);
     document.addEventListener("visibilitychange", refreshWhenVisible);
+    window.addEventListener("pageshow", handlePageShow);
     return () => {
       window.removeEventListener("focus", refreshWhenVisible);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.removeEventListener("pageshow", handlePageShow);
     };
-  }, [fetchStatus]);
+  }, [endAction, fetchStatus]);
 
   const subscribe = async (plan: BillingPlan) => {
-    setAction(plan);
+    if (!beginAction(plan)) return;
     try {
       const result = await createCheckoutSession(plan);
       toast.success("Redirecting to secure Stripe checkout...");
@@ -164,14 +177,20 @@ export function VendorSubscriptionPanel() {
           ? subscribeError.message
           : "Could not start checkout",
       );
-      setAction(null);
+    } finally {
+      endAction();
     }
   };
 
   const openPortal = async () => {
-    setAction("portal");
+    if (!beginAction("portal")) return;
     try {
+      // Always ask the backend for a new session. Portal URLs are short-lived
+      // and must never be cached or reused after returning from Stripe.
       const result = await createPortalSession();
+      if (!result.url) {
+        throw new Error("Stripe did not return a billing portal URL. Please try again.");
+      }
       window.location.assign(result.url);
     } catch (portalError) {
       toast.error(
@@ -179,12 +198,13 @@ export function VendorSubscriptionPanel() {
           ? portalError.message
           : "Could not open the billing portal",
       );
-      setAction(null);
+    } finally {
+      endAction();
     }
   };
 
   const refresh = async () => {
-    setAction("refresh");
+    if (!beginAction("refresh")) return;
     try {
       const current = await fetchStatus();
       if (current.isPremium) router.refresh();
@@ -196,7 +216,7 @@ export function VendorSubscriptionPanel() {
           : "Could not refresh subscription status",
       );
     } finally {
-      setAction(null);
+      endAction();
     }
   };
 
@@ -216,7 +236,7 @@ export function VendorSubscriptionPanel() {
   const yearly = plans.find((plan) => plan.id === "yearly");
   // This badge describes the cycle Stripe sold, not the pricing toggle below.
   const purchasedCycleLabel = subscription.isPremium
-    ? billingIntervalLabel(subscription.billingInterval)
+    ? billingIntervalLabel(getPurchasedBillingInterval(subscription))
     : null;
   const activePrice = billing === "monthly" ? monthly : yearly;
   const busy = action !== null;

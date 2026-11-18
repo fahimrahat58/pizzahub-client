@@ -25,7 +25,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiFetch } from "@/lib/api";
-import { billingIntervalLabel, getSubscriptionStatus } from "@/lib/subscriptions";
+import {
+  billingIntervalLabel,
+  getPurchasedBillingInterval,
+  getSubscriptionStatus,
+} from "@/lib/subscriptions";
 import type {
   ListResponse,
   MenuItemDto,
@@ -96,7 +100,7 @@ export function VendorOverview() {
   const completedOrders = orders.filter((order) => order.status === "delivered").length;
   const isPremium = subscription?.isPremium === true;
   const purchasedCycleLabel = isPremium
-    ? billingIntervalLabel(subscription?.billingInterval)
+    ? billingIntervalLabel(getPurchasedBillingInterval(subscription))
     : null;
   const menuCountByRestaurant = new Map<string, number>();
   for (const item of menu) {

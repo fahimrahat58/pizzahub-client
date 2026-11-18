@@ -15,6 +15,26 @@ export const billingIntervalLabel = (interval?: BillingInterval | null): string 
   return null;
 };
 
+/**
+ * Resolves the cycle the vendor actually purchased. The live Stripe Price
+ * interval wins; the verified persisted interval is the fallback. The future
+ * purchase selector is deliberately not an input here.
+ */
+export const getPurchasedBillingInterval = (
+  subscription?: Pick<
+    SubscriptionStatusDto,
+    "stripeRecurringInterval" | "billingInterval"
+  > | null,
+): BillingInterval | null => {
+  if (
+    subscription?.stripeRecurringInterval === "month" ||
+    subscription?.stripeRecurringInterval === "year"
+  ) {
+    return subscription.stripeRecurringInterval;
+  }
+  return subscription?.billingInterval ?? null;
+};
+
 export const FREE_RESTAURANT_LIMIT_MESSAGE =
   "You have reached the maximum limit of 3 restaurants. Upgrade to Premium to add more restaurants.";
 

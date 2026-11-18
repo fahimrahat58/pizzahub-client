@@ -61,8 +61,10 @@ export interface SubscriptionStatusDto {
   activeItemLimit: number | null;
   activeRestaurantLimit: number | null;
   billingPlanId: BillingPlan | null;
-  /** Purchased cycle from Stripe's Price; independent of the pricing toggle. */
+  /** Purchased cycle, preferring Stripe's live Price interval. */
   billingInterval: BillingInterval | null;
+  /** Raw recurring.interval from the authenticated vendor's Stripe Price. */
+  stripeRecurringInterval: BillingInterval | null;
   stripeCustomerId: string | null;
   stripeSubscriptionId: string | null;
   stripeCheckoutSessionId: string | null;

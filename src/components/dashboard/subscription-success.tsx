@@ -9,7 +9,11 @@ import { LinkButton } from "@/components/shared/ui-kit";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { billingIntervalLabel, getSubscriptionStatus } from "@/lib/subscriptions";
+import {
+  billingIntervalLabel,
+  getPurchasedBillingInterval,
+  getSubscriptionStatus,
+} from "@/lib/subscriptions";
 import type { SubscriptionStatusDto } from "@/lib/types";
 
 const CHECK_INTERVAL_MS = 4_000;
@@ -58,7 +62,7 @@ export function SubscriptionSuccess() {
   }, [checkStatus]);
 
   const isPremium = status?.isPremium === true;
-  const purchasedCycleLabel = billingIntervalLabel(status?.billingInterval);
+  const purchasedCycleLabel = billingIntervalLabel(getPurchasedBillingInterval(status));
 
   useEffect(() => {
     if (loading || isPremium || attempts >= MAX_AUTOMATIC_CHECKS) return;

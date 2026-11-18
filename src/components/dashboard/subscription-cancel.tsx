@@ -6,7 +6,11 @@ import { ArrowLeft, Loader2, RefreshCw, ShoppingCart } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LinkButton, PageHeader } from "@/components/shared/ui-kit";
-import { billingIntervalLabel, getSubscriptionStatus } from "@/lib/subscriptions";
+import {
+  billingIntervalLabel,
+  getPurchasedBillingInterval,
+  getSubscriptionStatus,
+} from "@/lib/subscriptions";
 import type { SubscriptionStatusDto } from "@/lib/types";
 
 export function SubscriptionCancel() {
@@ -37,7 +41,7 @@ export function SubscriptionCancel() {
     void Promise.resolve().then(() => checkStatus());
   }, [checkStatus]);
 
-  const purchasedCycleLabel = billingIntervalLabel(status?.billingInterval);
+  const purchasedCycleLabel = billingIntervalLabel(getPurchasedBillingInterval(status));
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
