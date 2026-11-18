@@ -194,10 +194,22 @@ export const auth = betterAuth({
         input: false,
       },
 
+      cancelAt: {
+        type: "date",
+        required: false,
+        input: false,
+      },
+
       cancelAtPeriodEnd: {
         type: "boolean",
         required: false,
         defaultValue: false,
+        input: false,
+      },
+
+      endedAt: {
+        type: "date",
+        required: false,
         input: false,
       },
 
@@ -251,7 +263,9 @@ export const auth = betterAuth({
             "subscriptionExpiresAt" in user ||
             "currentPeriodStart" in user ||
             "currentPeriodEnd" in user ||
+            "cancelAt" in user ||
             "cancelAtPeriodEnd" in user ||
+            "endedAt" in user ||
             "canceledAt" in user
           ) {
             return false;

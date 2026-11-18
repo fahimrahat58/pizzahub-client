@@ -100,6 +100,13 @@ export function VendorSubscriptionPanel() {
         getPlans(),
       ]);
       setSubscription(statusResult.subscription);
+      if (statusResult.subscription.billingInterval) {
+        // Align the selector with the purchased cycle; it is still only a
+        // future-purchase choice, never the source of truth for current plan.
+        setBilling(
+          statusResult.subscription.billingInterval === "year" ? "yearly" : "monthly",
+        );
+      }
       setPlans(plansResult.plans);
       setConfigured(plansResult.configured);
     } catch (loadError) {
@@ -120,6 +127,11 @@ export function VendorSubscriptionPanel() {
   const fetchStatus = useCallback(async () => {
     const result = await getSubscriptionStatus();
     setSubscription(result.subscription);
+    if (result.subscription.billingInterval) {
+      setBilling(
+        result.subscription.billingInterval === "year" ? "yearly" : "monthly",
+      );
+    }
     return result.subscription;
   }, []);
 
@@ -246,7 +258,16 @@ export function VendorSubscriptionPanel() {
             </p>
             {subscription.cancelAtPeriodEnd ? (
               <p className="text-sm text-amber-600 dark:text-amber-400">
-                Your subscription is set to cancel at the end of the billing period.
+                Your subscription is set to cancel
+                {subscription.cancelAt
+                  ? ` on ${formatDate(subscription.cancelAt)}`
+                  : " at the end of the billing period"}
+                . Premium remains active until then.
+              </p>
+            ) : null}
+            {subscription.endedAt ? (
+              <p className="text-sm text-destructive">
+                Subscription ended {formatDate(subscription.endedAt)}.
               </p>
             ) : null}
             {subscription.currentPeriodStart ? (

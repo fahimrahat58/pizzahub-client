@@ -42,7 +42,9 @@ export interface UserDto {
   currentPeriodStart?: string | null;
   currentPeriodEnd?: string | null;
   subscriptionExpiresAt: string | null;
+  cancelAt?: string | null;
   cancelAtPeriodEnd: boolean;
+  endedAt?: string | null;
   canceledAt?: string | null;
   isPremium: boolean;
   createdAt: string;
@@ -68,7 +70,9 @@ export interface SubscriptionStatusDto {
   currentPeriodStart: string | null;
   currentPeriodEnd: string | null;
   subscriptionExpiresAt: string | null;
+  cancelAt: string | null;
   cancelAtPeriodEnd: boolean;
+  endedAt: string | null;
   canceledAt: string | null;
   hasBillingAccount: boolean;
 }

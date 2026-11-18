@@ -775,7 +775,14 @@ export function AdminDashboard() {
                         ) : null}
                         <span>Expires: {formatOptionalDate(vendor.subscriptionExpiresAt)}</span>
                         {vendor.cancelAtPeriodEnd ? (
-                          <span className="text-amber-600 dark:text-amber-400">Cancels at period end</span>
+                          <span className="text-amber-600 dark:text-amber-400">
+                            Cancels {vendor.cancelAt ? formatDate(vendor.cancelAt) : "at period end"}
+                          </span>
+                        ) : null}
+                        {vendor.endedAt ? (
+                          <span className="text-destructive">
+                            Ended: {formatDate(vendor.endedAt)}
+                          </span>
                         ) : null}
                         {vendor.canceledAt ? (
                           <span className="text-destructive">
