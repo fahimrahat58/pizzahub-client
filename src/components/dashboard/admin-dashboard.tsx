@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  BadgeCheck,
   ClipboardList,
   CreditCard,
   Loader2,
@@ -51,6 +50,7 @@ import type {
   OrderDto,
   Pagination,
   SubscriptionEventDto,
+  TransactionDto,
   UserDto,
   UserRole,
 } from "@/lib/types";
@@ -93,6 +93,8 @@ export function AdminDashboard() {
 
   const [summary, setSummary] = useState<AdminStatsPayload | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItemDto[]>([]);
+  const [menuSearchInput, setMenuSearchInput] = useState("");
+  const [menuSearch, setMenuSearch] = useState("");
   const [orders, setOrders] = useState<OrderDto[]>([]);
   const [coreLoading, setCoreLoading] = useState(true);
   const [coreError, setCoreError] = useState("");
@@ -116,6 +118,9 @@ export function AdminDashboard() {
     events: SubscriptionEventDto[];
   } | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [transactions, setTransactions] = useState<TransactionDto[]>([]);
+  const [transactionsLoading, setTransactionsLoading] = useState(true);
+  const [transactionsError, setTransactionsError] = useState("");
 
   const [decision, setDecision] = useState<MenuDecision | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -132,9 +137,11 @@ export function AdminDashboard() {
     setCoreLoading(true);
     setCoreError("");
     try {
+      const menuParams = new URLSearchParams({ limit: "100" });
+      if (menuSearch.trim()) menuParams.set("search", menuSearch.trim());
       const [statsData, menuData, orderData] = await Promise.all([
         apiFetch<AdminStatsPayload>("/api/admin/stats"),
-        apiFetch<ListResponse<MenuItemDto>>("/api/menu/admin/all?limit=100"),
+        apiFetch<ListResponse<MenuItemDto>>(`/api/menu/admin/all?${menuParams}`),
         apiFetch<{ success: boolean; orders: OrderDto[] }>("/api/orders/admin?limit=100"),
       ]);
       setSummary(statsData);
@@ -145,7 +152,7 @@ export function AdminDashboard() {
     } finally {
       setCoreLoading(false);
     }
-  }, []);
+  }, [menuSearch]);
 
   const loadUsers = useCallback(async () => {
     setUsersLoading(true);
@@ -188,6 +195,24 @@ export function AdminDashboard() {
     }
   }, [billingSearch]);
 
+  const loadTransactions = useCallback(async () => {
+    setTransactionsLoading(true);
+    setTransactionsError("");
+    try {
+      const data = await apiFetch<{
+        success: boolean;
+        transactions: TransactionDto[];
+      }>("/api/admin/transactions?limit=100");
+      setTransactions(data.transactions);
+    } catch (error) {
+      setTransactionsError(
+        error instanceof Error ? error.message : "Could not load transactions",
+      );
+    } finally {
+      setTransactionsLoading(false);
+    }
+  }, []);
+
   const openBillingHistory = async (vendor: UserDto) => {
     setHistoryLoading(true);
     try {
@@ -216,9 +241,13 @@ export function AdminDashboard() {
     void Promise.resolve().then(loadBilling);
   }, [loadBilling]);
 
+  useEffect(() => {
+    void Promise.resolve().then(loadTransactions);
+  }, [loadTransactions]);
+
   const refresh = useCallback(async () => {
-    await Promise.all([loadCore(), loadUsers(), loadBilling()]);
-  }, [loadCore, loadUsers, loadBilling]);
+    await Promise.all([loadCore(), loadUsers(), loadBilling(), loadTransactions()]);
+  }, [loadCore, loadUsers, loadBilling, loadTransactions]);
 
   const openDecision = (item: MenuItemDto, action: MenuDecision["action"]) => {
     setDecision({ item, action });
@@ -336,8 +365,10 @@ export function AdminDashboard() {
     ? [
         { label: "Total users", value: stats.totalUsers, icon: UsersRound },
         { label: "Vendors", value: stats.totalVendors, icon: ShieldCheck },
-        { label: "Hidden pizzas", value: stats.hiddenMenuItems, icon: BadgeCheck },
-        { label: "Orders", value: stats.totalOrders, icon: ClipboardList },
+        { label: "Customers", value: stats.totalCustomers, icon: UsersRound },
+        { label: "Menu items", value: stats.totalMenuItems, icon: Pizza },
+        { label: "Pending items", value: stats.pendingMenuItems, icon: ClipboardList },
+        { label: "Transactions", value: stats.totalTransactions, icon: CreditCard },
       ]
     : [];
 
@@ -373,7 +404,7 @@ export function AdminDashboard() {
         <ErrorState message={coreError} onRetry={() => void loadCore()} />
       ) : tab === "overview" ? (
         <div className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {statCards.map(({ label, value, icon: Icon }) => (
               <Card key={label}>
                 <CardContent className="flex items-center gap-4 py-5">
@@ -459,24 +490,61 @@ export function AdminDashboard() {
           </div>
         </div>
       ) : tab === "menu" ? (
-        menuItems.length ? (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {menuItems.map((item) => (
-              <ModerationCard
-                key={item.id}
-                item={item}
-                onDecide={openDecision}
-                onDelete={setDeleteMenuItemTarget}
+        <div className="space-y-5">
+          <form
+            className="flex flex-wrap items-end gap-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              setMenuSearch(menuSearchInput.trim());
+            }}
+          >
+            <div className="min-w-48 flex-1 space-y-1.5">
+              <Label htmlFor="menuSearch">Search menu items</Label>
+              <Input
+                id="menuSearch"
+                placeholder="Name, category, or location"
+                value={menuSearchInput}
+                onChange={(event) => setMenuSearchInput(event.target.value)}
               />
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            icon={<Pizza className="size-5" />}
-            title="No menu items yet"
-            description="Pizzas published by vendors will appear here."
-          />
-        )
+            </div>
+            <Button type="submit">Search</Button>
+            {menuSearch ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setMenuSearchInput("");
+                  setMenuSearch("");
+                }}
+              >
+                Clear
+              </Button>
+            ) : null}
+          </form>
+
+          {menuItems.length ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {menuItems.map((item) => (
+                <ModerationCard
+                  key={item.id}
+                  item={item}
+                  onDecide={openDecision}
+                  onDelete={setDeleteMenuItemTarget}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon={<Pizza className="size-5" />}
+              title={menuSearch ? "No matching menu items" : "No menu items yet"}
+              description={
+                menuSearch
+                  ? "Try a different name, category, or location."
+                  : "Pizzas submitted by vendors will appear here."
+              }
+            />
+          )}
+        </div>
       ) : tab === "users" ? (
         <div className="space-y-5">
           <form
@@ -726,6 +794,67 @@ export function AdminDashboard() {
               </CardContent>
             </Card>
           ) : null}
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Payment transactions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {transactionsLoading ? (
+                <div className="flex items-center justify-center py-10 text-muted-foreground">
+                  <Loader2 className="mr-2 size-5 animate-spin" /> Loading transactions...
+                </div>
+              ) : transactionsError ? (
+                <ErrorState
+                  message={transactionsError}
+                  onRetry={() => void loadTransactions()}
+                />
+              ) : transactions.length ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                        <th className="py-2 pr-4 font-medium">Vendor</th>
+                        <th className="py-2 pr-4 font-medium">Plan</th>
+                        <th className="py-2 pr-4 font-medium">Amount</th>
+                        <th className="py-2 pr-4 font-medium">Status</th>
+                        <th className="py-2 pr-4 font-medium">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {transactions.map((transaction) => (
+                        <tr
+                          key={transaction.id}
+                          className="border-b border-border/60 last:border-0"
+                        >
+                          <td className="py-2.5 pr-4">
+                            <p className="font-medium">{transaction.vendorName}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {transaction.vendorEmail}
+                            </p>
+                          </td>
+                          <td className="py-2.5 pr-4 capitalize">
+                            <Badge variant="secondary">{transaction.plan}</Badge>
+                          </td>
+                          <td className="py-2.5 pr-4 font-medium">
+                            {transaction.currency} {transaction.amount.toFixed(2)}
+                          </td>
+                          <td className="py-2.5 pr-4 capitalize">{transaction.status}</td>
+                          <td className="py-2.5 pr-4 text-muted-foreground">
+                            {formatDate(transaction.createdAt)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No payment transactions recorded yet.
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </div>
       ) : tab === "orders" ? (
         orders.length ? (

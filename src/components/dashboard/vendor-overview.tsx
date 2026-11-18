@@ -91,6 +91,7 @@ export function VendorOverview() {
     (item) => item.isActive && item.approvalStatus === "approved",
   ).length;
   const pendingOrders = orders.filter((order) => order.status === "pending").length;
+  const acceptedOrders = orders.filter((order) => order.status === "accepted").length;
   const completedOrders = orders.filter((order) => order.status === "delivered").length;
   const isPremium = subscription?.isPremium === true;
   const menuCountByRestaurant = new Map<string, number>();
@@ -109,6 +110,7 @@ export function VendorOverview() {
     { label: "Unpublished", value: menu.length - published, icon: EyeOff },
     { label: "Total orders", value: orders.length, icon: ClipboardList },
     { label: "Pending orders", value: pendingOrders, icon: Loader2 },
+    { label: "Accepted orders", value: acceptedOrders, icon: CheckCircle2 },
     { label: "Completed orders", value: completedOrders, icon: CheckCircle2 },
   ];
 

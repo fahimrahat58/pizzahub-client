@@ -100,6 +100,7 @@ export interface MenuItemDto {
   category: string;
   price: number;
   ingredients: string[];
+  location: string;
   image: string;
   isActive: boolean;
   approvalStatus: ApprovalStatus;
@@ -188,8 +189,25 @@ export interface AdminStats {
   totalVendors: number;
   totalMenuItems: number;
   pendingMenuItems: number;
+  hiddenMenuItems: number;
   approvedMenuItems: number;
   totalOrders: number;
+  totalTransactions: number;
+}
+
+export interface TransactionDto {
+  id: string;
+  vendorId: string;
+  vendorName: string;
+  vendorEmail: string;
+  plan: SubscriptionPlan;
+  amount: number;
+  currency: string;
+  status: SubscriptionStatus;
+  stripeEventId: string;
+  stripeSubscriptionId: string | null;
+  description: string | null;
+  createdAt: string;
 }
 
 export interface AdminDashboardResponse {

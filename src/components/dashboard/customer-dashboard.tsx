@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ClipboardList, Heart, Loader2, Pizza, Truck } from "lucide-react";
+import { CheckCircle2, ClipboardList, Loader2, XCircle } from "lucide-react";
 
 import { OrderCard } from "@/components/dashboard/order-card";
 import { ProfilePanel } from "@/components/dashboard/profile-panel";
@@ -51,10 +51,9 @@ export function CustomerDashboard() {
     void Promise.resolve().then(load);
   }, [load]);
 
-  const activeOrders = orders.filter((order) =>
-    ["pending", "accepted", "preparing", "out_for_delivery"].includes(order.status),
-  );
-  const delivered = orders.filter((order) => order.status === "delivered");
+  const pendingOrders = orders.filter((order) => order.status === "pending").length;
+  const acceptedOrders = orders.filter((order) => order.status === "accepted").length;
+  const rejectedOrders = orders.filter((order) => order.status === "rejected").length;
 
   return (
     <div className="space-y-8">
@@ -90,10 +89,10 @@ export function CustomerDashboard() {
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { label: "Active orders", value: activeOrders.length, icon: Truck },
-              { label: "Delivered", value: delivered.length, icon: ClipboardList },
-              { label: "Favorites", value: favorites.length, icon: Heart },
-              { label: "Total orders", value: orders.length, icon: Pizza },
+              { label: "Total orders", value: orders.length, icon: ClipboardList },
+              { label: "Pending orders", value: pendingOrders, icon: Loader2 },
+              { label: "Accepted orders", value: acceptedOrders, icon: CheckCircle2 },
+              { label: "Rejected orders", value: rejectedOrders, icon: XCircle },
             ].map(({ label, value, icon: Icon }) => (
               <Card key={label}>
                 <CardContent className="flex items-center gap-4 py-5">

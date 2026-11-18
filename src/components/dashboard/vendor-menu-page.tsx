@@ -167,7 +167,8 @@ export function VendorMenuPage() {
                   <div className="min-w-0">
                     <h3 className="truncate font-semibold">{item.name}</h3>
                     <p className="truncate text-xs text-muted-foreground">
-                      {item.category} · {item.restaurant?.name ?? "Unassigned"}
+                      {item.category} · {item.location || "Location not set"} ·{" "}
+                      {item.restaurant?.name ?? "Unassigned"}
                     </p>
                   </div>
                   <span className="font-bold text-orange-500">${item.price.toFixed(2)}</span>
@@ -188,7 +189,14 @@ export function VendorMenuPage() {
                   <Button
                     size="sm"
                     variant="secondary"
-                    disabled={busyId === item.id}
+                    disabled={busyId === item.id || item.approvalStatus !== "approved"}
+                    title={
+                      item.approvalStatus === "pending"
+                        ? "Waiting for admin approval"
+                        : item.approvalStatus === "rejected"
+                          ? "Removed by an administrator"
+                          : undefined
+                    }
                     onClick={() => void toggleActive(item)}
                   >
                     {item.isActive ? "Unpublish" : "Publish"}
@@ -204,7 +212,7 @@ export function VendorMenuPage() {
       ) : (
         <EmptyState
           title="Your menu is empty"
-          description="Add your first pizza. New items are published immediately."
+          description="Add your first pizza. New items are submitted for admin approval."
           action={<Button onClick={openCreate}><Plus className="size-4" /> Add Menu Item</Button>}
         />
       )}

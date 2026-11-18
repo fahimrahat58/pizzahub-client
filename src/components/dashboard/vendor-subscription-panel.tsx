@@ -47,18 +47,16 @@ const statusLabels: Record<SubscriptionStatus, string> = {
 };
 
 const freeFeatures = [
-  "3 active menu items",
-  "Standard menu visibility",
+  "Max 3 active menu items",
   "Basic vendor dashboard",
-  "Admin-reviewed listings",
+  "Order management",
 ];
 
 const premiumFeatures = [
-  "Unlimited active menu items",
-  "Featured placement in the public menu",
+  "Unlimited active items",
   "Premium vendor badge",
-  "Advanced vendor dashboard insights",
-  "Priority support",
+  "Featured menu placement",
+  "All Free features",
 ];
 
 const formatPrice = (plan: PlanPrice | undefined, fallback: string) => {
@@ -353,7 +351,7 @@ export function VendorSubscriptionPanel() {
                 ) : (
                   <Sparkles className="size-4" />
                 )}
-                {configured ? "Subscribe with Stripe" : "Unavailable"}
+                Upgrade to Premium
               </Button>
             )}
           </CardContent>
@@ -376,11 +374,11 @@ export function VendorSubscriptionPanel() {
               </thead>
               <tbody>
                 {[
-                  ["Active menu items", "3", "Unlimited"],
-                  ["Featured placement", "No", "Yes"],
-                  ["Premium badge", "No", "Yes"],
-                  ["Dashboard", "Basic", "Advanced"],
-                  ["Billing", "None", "Stripe-managed"],
+                  ["Active menu items", "Max 3", "Unlimited"],
+                  ["Vendor dashboard", "Basic", "All Free features"],
+                  ["Order management", "Yes", "Yes"],
+                  ["Premium vendor badge", "No", "Yes"],
+                  ["Featured menu placement", "No", "Yes"],
                 ].map(([label, free, premium]) => (
                   <tr key={label} className="border-b border-border/60 last:border-0">
                     <td className="py-3 pr-4">{label}</td>

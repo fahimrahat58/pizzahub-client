@@ -36,6 +36,7 @@ const menuSchema = z.object({
   category: z.string().trim().min(2).max(40),
   price: z.number().positive("Price must be greater than 0").max(1000),
   ingredients: z.string().trim().min(1, "Add at least one ingredient"),
+  location: z.string().trim().min(2, "Enter the area or city").max(100),
   image: z.url("Upload a menu image"),
   isActive: z.boolean(),
 });
@@ -69,8 +70,9 @@ export function MenuFormDialog({
       category: "Pizza",
       price: 12,
       ingredients: "",
+      location: "",
       image: "",
-      isActive: true,
+      isActive: false,
     },
   });
   const saving = form.formState.isSubmitting;
@@ -88,8 +90,9 @@ export function MenuFormDialog({
       category: item?.category ?? "Pizza",
       price: item?.price ?? 12,
       ingredients: item?.ingredients.join(", ") ?? "",
+      location: item?.location ?? "",
       image: item?.image ?? "",
-      isActive: item?.isActive ?? true,
+      isActive: item?.isActive ?? false,
     });
     form.clearErrors();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -106,6 +109,7 @@ export function MenuFormDialog({
         .split(",")
         .map((part) => part.trim())
         .filter(Boolean),
+      location: values.location,
       image: values.image,
       isActive: values.isActive,
     };
@@ -121,7 +125,7 @@ export function MenuFormDialog({
           method: "POST",
           body: payload,
         });
-        toast.success("Pizza published");
+        toast.success("Pizza submitted for admin approval");
       }
       onOpenChange(false);
       onSaved();
@@ -136,8 +140,9 @@ export function MenuFormDialog({
         <DialogHeader>
           <DialogTitle>{item ? "Edit pizza" : "Add a new pizza"}</DialogTitle>
           <DialogDescription>
-            New pizzas are published immediately and visible on your public menu.
-            Unpublished items never count toward the free plan limit.
+            {item
+              ? "Update the details of your pizza. Availability can be managed once an admin has approved it."
+              : "New pizzas are submitted for admin approval and stay hidden until approved. Unpublished items never count toward the free plan limit."}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit((values) => void save(values))} className="space-y-4">
@@ -236,10 +241,34 @@ export function MenuFormDialog({
             </div>
           </div>
 
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" className="size-4" {...form.register("isActive")} />
-            Published (visible and orderable on your public menu)
-          </label>
+          <div className="space-y-2">
+            <Label htmlFor="menuLocation">Location (area / city)</Label>
+            <Input
+              id="menuLocation"
+              placeholder="e.g. Downtown, Dhaka"
+              {...form.register("location")}
+            />
+            {form.formState.errors.location ? (
+              <p className="text-xs text-destructive">
+                {form.formState.errors.location.message}
+              </p>
+            ) : null}
+          </div>
+
+          {item && item.approvalStatus === "approved" ? (
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" className="size-4" {...form.register("isActive")} />
+              Published (visible and orderable on your public menu)
+            </label>
+          ) : (
+            <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
+              {item
+                ? item.approvalStatus === "rejected"
+                  ? "This item was removed by an administrator and cannot be republished."
+                  : "This item is awaiting admin approval and cannot be published yet."
+                : "This item will be hidden until an administrator approves it."}
+            </p>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -251,7 +280,7 @@ export function MenuFormDialog({
               ) : (
                 <Save className="size-4" />
               )}
-              {item ? "Save changes" : "Publish pizza"}
+              {item ? "Save changes" : "Submit for approval"}
             </Button>
           </DialogFooter>
         </form>
