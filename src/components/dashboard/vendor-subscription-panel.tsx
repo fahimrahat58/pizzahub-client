@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import {
@@ -21,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  billingIntervalLabel,
   createCheckoutSession,
   createPortalSession,
   getPlans,
@@ -80,6 +82,7 @@ const formatDate = (value: string | null) => {
 };
 
 export function VendorSubscriptionPanel() {
+  const router = useRouter();
   const [subscription, setSubscription] = useState<SubscriptionStatusDto | null>(null);
   const [plans, setPlans] = useState<PlanPrice[]>([]);
   const [configured, setConfigured] = useState(false);
@@ -113,6 +116,29 @@ export function VendorSubscriptionPanel() {
     // triggered from the effect body.
     void Promise.resolve().then(load);
   }, [load]);
+
+  const fetchStatus = useCallback(async () => {
+    const result = await getSubscriptionStatus();
+    setSubscription(result.subscription);
+    return result.subscription;
+  }, []);
+
+  // Returning from Stripe's portal can happen without a full page reload.
+  // Always re-read MongoDB-backed state instead of assuming the toggle or a
+  // cached server component reflects the purchase.
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") {
+        void fetchStatus().catch(() => undefined);
+      }
+    };
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [fetchStatus]);
 
   const subscribe = async (plan: BillingPlan) => {
     setAction(plan);
@@ -148,8 +174,8 @@ export function VendorSubscriptionPanel() {
   const refresh = async () => {
     setAction("refresh");
     try {
-      const result = await getSubscriptionStatus();
-      setSubscription(result.subscription);
+      const current = await fetchStatus();
+      if (current.isPremium) router.refresh();
       toast.success("Subscription status refreshed");
     } catch (refreshError) {
       toast.error(
@@ -176,6 +202,10 @@ export function VendorSubscriptionPanel() {
 
   const monthly = plans.find((plan) => plan.id === "monthly");
   const yearly = plans.find((plan) => plan.id === "yearly");
+  // This badge describes the cycle Stripe sold, not the pricing toggle below.
+  const purchasedCycleLabel = subscription.isPremium
+    ? billingIntervalLabel(subscription.billingInterval)
+    : null;
   const activePrice = billing === "monthly" ? monthly : yearly;
   const busy = action !== null;
   const canSubscribe = configured && !subscription.isPremium && !busy;
@@ -201,6 +231,10 @@ export function VendorSubscriptionPanel() {
                 )}
               </Badge>
               <Badge variant="secondary">{statusLabels[subscription.status] ?? subscription.status}</Badge>
+              {purchasedCycleLabel ? (
+                <Badge variant="outline">{purchasedCycleLabel} billing</Badge>
+              ) : null}
+              {subscription.canceledAt ? <Badge variant="destructive">Canceled</Badge> : null}
             </div>
             <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <CalendarClock className="size-4" />
@@ -213,6 +247,14 @@ export function VendorSubscriptionPanel() {
             {subscription.cancelAtPeriodEnd ? (
               <p className="text-sm text-amber-600 dark:text-amber-400">
                 Your subscription is set to cancel at the end of the billing period.
+              </p>
+            ) : null}
+            {subscription.currentPeriodStart ? (
+              <p className="text-xs text-muted-foreground">
+                Current period started {formatDate(subscription.currentPeriodStart)}
+                {subscription.canceledAt
+                  ? ` · Canceled ${formatDate(subscription.canceledAt)}`
+                  : ""}
               </p>
             ) : null}
             {subscription.stripeSubscriptionId ? (

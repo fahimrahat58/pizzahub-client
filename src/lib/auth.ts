@@ -146,6 +146,18 @@ export const auth = betterAuth({
         input: false,
       },
 
+      billingPlanId: {
+        type: "string",
+        required: false,
+        input: false,
+      },
+
+      billingInterval: {
+        type: "string",
+        required: false,
+        input: false,
+      },
+
       stripeCustomerId: {
         type: "string",
         required: false,
@@ -158,10 +170,40 @@ export const auth = betterAuth({
         input: false,
       },
 
+      stripeCheckoutSessionId: {
+        type: "string",
+        required: false,
+        input: false,
+      },
+
+      stripePriceId: {
+        type: "string",
+        required: false,
+        input: false,
+      },
+
+      currentPeriodStart: {
+        type: "date",
+        required: false,
+        input: false,
+      },
+
+      currentPeriodEnd: {
+        type: "date",
+        required: false,
+        input: false,
+      },
+
       cancelAtPeriodEnd: {
         type: "boolean",
         required: false,
         defaultValue: false,
+        input: false,
+      },
+
+      canceledAt: {
+        type: "date",
+        required: false,
         input: false,
       },
     },
@@ -200,10 +242,17 @@ export const auth = betterAuth({
             "isBlocked" in user ||
             "subscriptionPlan" in user ||
             "subscriptionStatus" in user ||
+            "billingPlanId" in user ||
+            "billingInterval" in user ||
             "stripeCustomerId" in user ||
             "stripeSubscriptionId" in user ||
+            "stripeCheckoutSessionId" in user ||
+            "stripePriceId" in user ||
             "subscriptionExpiresAt" in user ||
-            "cancelAtPeriodEnd" in user
+            "currentPeriodStart" in user ||
+            "currentPeriodEnd" in user ||
+            "cancelAtPeriodEnd" in user ||
+            "canceledAt" in user
           ) {
             return false;
           }

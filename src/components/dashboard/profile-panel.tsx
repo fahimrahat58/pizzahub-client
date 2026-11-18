@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { apiFetch } from "@/lib/api";
+import { billingIntervalLabel } from "@/lib/subscriptions";
 import type { UserDto } from "@/lib/types";
 
 const profileSchema = z.object({
@@ -99,6 +100,8 @@ export function ProfilePanel({ role }: { role: "customer" | "vendor" | "admin" }
 
   if (error) return <ErrorState message={error} onRetry={() => void load()} />;
 
+  const purchasedCycleLabel = billingIntervalLabel(profile?.billingInterval);
+
   return (
     <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
       <Card>
@@ -162,7 +165,10 @@ export function ProfilePanel({ role }: { role: "customer" | "vendor" | "admin" }
               </div>
               <div className="rounded-lg bg-muted/50 p-3 text-sm">
                 <p className="text-xs text-muted-foreground">Plan</p>
-                <p className="font-medium capitalize">{profile?.subscriptionPlan}</p>
+                <p className="font-medium capitalize">
+                  {profile?.subscriptionPlan}
+                  {profile?.isPremium && purchasedCycleLabel ? ` · ${purchasedCycleLabel}` : ""}
+                </p>
               </div>
             </div>
             <Button type="submit" disabled={form.formState.isSubmitting}>

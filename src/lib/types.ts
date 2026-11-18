@@ -34,18 +34,23 @@ export interface UserDto {
   subscriptionPlan: SubscriptionPlan;
   subscriptionStatus: SubscriptionStatus;
   billingPlanId?: BillingPlan | null;
+  billingInterval?: BillingInterval | null;
   stripeCustomerId: string | null;
   stripeSubscriptionId: string | null;
   stripeCheckoutSessionId?: string | null;
   stripePriceId?: string | null;
+  currentPeriodStart?: string | null;
+  currentPeriodEnd?: string | null;
   subscriptionExpiresAt: string | null;
   cancelAtPeriodEnd: boolean;
+  canceledAt?: string | null;
   isPremium: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
 export type BillingPlan = "monthly" | "yearly";
+export type BillingInterval = "month" | "year";
 
 export interface SubscriptionStatusDto {
   plan: SubscriptionPlan;
@@ -54,12 +59,17 @@ export interface SubscriptionStatusDto {
   activeItemLimit: number | null;
   activeRestaurantLimit: number | null;
   billingPlanId: BillingPlan | null;
+  /** Purchased cycle from Stripe's Price; independent of the pricing toggle. */
+  billingInterval: BillingInterval | null;
   stripeCustomerId: string | null;
   stripeSubscriptionId: string | null;
   stripeCheckoutSessionId: string | null;
   stripePriceId: string | null;
+  currentPeriodStart: string | null;
+  currentPeriodEnd: string | null;
   subscriptionExpiresAt: string | null;
   cancelAtPeriodEnd: boolean;
+  canceledAt: string | null;
   hasBillingAccount: boolean;
 }
 
@@ -84,6 +94,7 @@ export interface SubscriptionEventDto {
   stripeEventId: string;
   type: string;
   plan: SubscriptionPlan | null;
+  billingInterval?: BillingInterval | null;
   status: SubscriptionStatus | null;
   description: string | null;
   createdAt: string;
@@ -241,6 +252,7 @@ export interface TransactionDto {
   vendorName: string;
   vendorEmail: string;
   plan: SubscriptionPlan;
+  billingInterval?: BillingInterval | null;
   amount: number;
   currency: string;
   status: SubscriptionStatus;

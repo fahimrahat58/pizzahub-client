@@ -2,10 +2,18 @@
 
 import { apiFetch } from "@/lib/api";
 import type {
+  BillingInterval,
   BillingPlan,
   PlansResponse,
   SubscriptionStatusDto,
 } from "@/lib/types";
+
+/** Labels only the cycle Stripe actually purchased; never the pricing toggle. */
+export const billingIntervalLabel = (interval?: BillingInterval | null): string | null => {
+  if (interval === "month") return "Monthly";
+  if (interval === "year") return "Yearly";
+  return null;
+};
 
 export const FREE_RESTAURANT_LIMIT_MESSAGE =
   "You have reached the maximum limit of 3 restaurants. Upgrade to Premium to add more restaurants.";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
@@ -9,13 +9,14 @@ import { LinkButton } from "@/components/shared/ui-kit";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getSubscriptionStatus } from "@/lib/subscriptions";
+import { billingIntervalLabel, getSubscriptionStatus } from "@/lib/subscriptions";
 import type { SubscriptionStatusDto } from "@/lib/types";
 
 const CHECK_INTERVAL_MS = 4_000;
 const MAX_AUTOMATIC_CHECKS = 12;
 
 export function SubscriptionSuccess() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
   const [status, setStatus] = useState<SubscriptionStatusDto | null>(null);
@@ -31,6 +32,7 @@ export function SubscriptionSuccess() {
     try {
       const result = await getSubscriptionStatus();
       setStatus(result.subscription);
+      if (result.subscription.isPremium) router.refresh();
       if (announce) {
         toast.success(
           result.subscription.isPremium
@@ -47,7 +49,7 @@ export function SubscriptionSuccess() {
       setLoading(false);
       setChecking(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     // Defer to a microtask so mount-time state updates are not synchronously
@@ -56,6 +58,7 @@ export function SubscriptionSuccess() {
   }, [checkStatus]);
 
   const isPremium = status?.isPremium === true;
+  const purchasedCycleLabel = billingIntervalLabel(status?.billingInterval);
 
   useEffect(() => {
     if (loading || isPremium || attempts >= MAX_AUTOMATIC_CHECKS) return;
@@ -98,6 +101,11 @@ export function SubscriptionSuccess() {
               <p>
                 Stripe status: <strong>{status?.status ?? "pending"}</strong>
               </p>
+              {purchasedCycleLabel ? (
+                <p>
+                  Purchased cycle: <strong>{purchasedCycleLabel}</strong>
+                </p>
+              ) : null}
               {!isPremium && attempts >= MAX_AUTOMATIC_CHECKS ? (
                 <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
                   Automatic checks have paused. Use the refresh button below if you have just

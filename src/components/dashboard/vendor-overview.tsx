@@ -25,7 +25,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiFetch } from "@/lib/api";
-import { getSubscriptionStatus } from "@/lib/subscriptions";
+import { billingIntervalLabel, getSubscriptionStatus } from "@/lib/subscriptions";
 import type {
   ListResponse,
   MenuItemDto,
@@ -95,6 +95,9 @@ export function VendorOverview() {
   const acceptedOrders = orders.filter((order) => order.status === "accepted").length;
   const completedOrders = orders.filter((order) => order.status === "delivered").length;
   const isPremium = subscription?.isPremium === true;
+  const purchasedCycleLabel = isPremium
+    ? billingIntervalLabel(subscription?.billingInterval)
+    : null;
   const menuCountByRestaurant = new Map<string, number>();
   for (const item of menu) {
     if (!item.restaurantId) continue;
@@ -158,7 +161,14 @@ export function VendorOverview() {
               <Sparkles className="size-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{isPremium ? "Premium" : "Free"}</p>
+              <p className="text-2xl font-bold">
+                {isPremium ? "Premium" : "Free"}
+                {purchasedCycleLabel ? (
+                  <span className="ml-2 text-sm font-medium text-orange-500">
+                    {purchasedCycleLabel}
+                  </span>
+                ) : null}
+              </p>
               <p className="text-xs text-muted-foreground">Current plan</p>
             </div>
           </CardContent>

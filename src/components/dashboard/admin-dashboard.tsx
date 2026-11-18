@@ -45,6 +45,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { apiFetch } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
+import { billingIntervalLabel } from "@/lib/subscriptions";
 import type {
   AdminDashboardResponse,
   ListResponse,
@@ -767,9 +768,19 @@ export function AdminDashboard() {
                       <p className="text-sm text-muted-foreground">{vendor.email}</p>
                       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                         <span>Status: <strong>{vendor.subscriptionStatus}</strong></span>
+                        {vendor.billingInterval ? (
+                          <span>
+                            Cycle: <strong>{billingIntervalLabel(vendor.billingInterval)}</strong>
+                          </span>
+                        ) : null}
                         <span>Expires: {formatOptionalDate(vendor.subscriptionExpiresAt)}</span>
                         {vendor.cancelAtPeriodEnd ? (
                           <span className="text-amber-600 dark:text-amber-400">Cancels at period end</span>
+                        ) : null}
+                        {vendor.canceledAt ? (
+                          <span className="text-destructive">
+                            Canceled: {formatDate(vendor.canceledAt)}
+                          </span>
                         ) : null}
                       </div>
                       <div className="space-y-0.5 font-mono text-[11px] text-muted-foreground">
@@ -814,6 +825,9 @@ export function AdminDashboard() {
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         {event.plan ? <Badge variant="secondary">{event.plan}</Badge> : null}
+                        {event.billingInterval ? (
+                          <Badge variant="outline">{billingIntervalLabel(event.billingInterval)}</Badge>
+                        ) : null}
                         {event.status ? <span>{event.status}</span> : null}
                         <span>{formatDate(event.createdAt)}</span>
                       </div>
@@ -847,6 +861,7 @@ export function AdminDashboard() {
                       <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                         <th className="py-2 pr-4 font-medium">Vendor</th>
                         <th className="py-2 pr-4 font-medium">Plan</th>
+                        <th className="py-2 pr-4 font-medium">Cycle</th>
                         <th className="py-2 pr-4 font-medium">Amount</th>
                         <th className="py-2 pr-4 font-medium">Status</th>
                         <th className="py-2 pr-4 font-medium">Date</th>
@@ -866,6 +881,9 @@ export function AdminDashboard() {
                           </td>
                           <td className="py-2.5 pr-4 capitalize">
                             <Badge variant="secondary">{transaction.plan}</Badge>
+                          </td>
+                          <td className="py-2.5 pr-4 text-muted-foreground">
+                            {billingIntervalLabel(transaction.billingInterval) ?? "—"}
                           </td>
                           <td className="py-2.5 pr-4 font-medium">
                             {transaction.currency} {transaction.amount.toFixed(2)}

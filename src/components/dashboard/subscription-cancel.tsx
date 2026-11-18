@@ -6,7 +6,7 @@ import { ArrowLeft, Loader2, RefreshCw, ShoppingCart } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LinkButton, PageHeader } from "@/components/shared/ui-kit";
-import { getSubscriptionStatus } from "@/lib/subscriptions";
+import { billingIntervalLabel, getSubscriptionStatus } from "@/lib/subscriptions";
 import type { SubscriptionStatusDto } from "@/lib/types";
 
 export function SubscriptionCancel() {
@@ -36,6 +36,8 @@ export function SubscriptionCancel() {
     // triggered from the effect body.
     void Promise.resolve().then(() => checkStatus());
   }, [checkStatus]);
+
+  const purchasedCycleLabel = billingIntervalLabel(status?.billingInterval);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -68,6 +70,11 @@ export function SubscriptionCancel() {
               <p>
                 Subscription status: <strong>{status?.status ?? "none"}</strong>
               </p>
+              {purchasedCycleLabel ? (
+                <p>
+                  Purchased cycle: <strong>{purchasedCycleLabel}</strong>
+                </p>
+              ) : null}
               {status?.cancelAtPeriodEnd ? (
                 <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
                   Your existing Premium access remains active until the end of the current period.
