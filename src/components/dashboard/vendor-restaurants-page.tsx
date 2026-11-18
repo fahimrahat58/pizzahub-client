@@ -76,7 +76,11 @@ export function VendorRestaurantsPage() {
     setLimitDialogOpen(true);
   }, []);
 
-  const restaurantLimit = subscription?.activeRestaurantLimit ?? 3;
+  // `null` is the backend's explicit "unlimited" value for active Premium.
+  const restaurantLimit =
+    subscription?.activeRestaurantLimit === null
+      ? null
+      : (subscription?.activeRestaurantLimit ?? 3);
   const atRestaurantLimit =
     restaurantLimit !== null && restaurants.length >= restaurantLimit;
 
