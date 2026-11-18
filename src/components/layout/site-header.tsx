@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils";
 const publicLinks = [
   { href: "/", label: "Home" },
   { href: "/menu", label: "Browse Menu" },
+  { href: "/restaurants", label: "Restaurants" },
 ];
 
 // Active-link styling used to depend on usePathname(). That URL hook requires a
