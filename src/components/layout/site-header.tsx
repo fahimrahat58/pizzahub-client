@@ -29,7 +29,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { clearApiToken } from "@/lib/api";
 import { emitDashboardHash } from "@/lib/dashboard-hash";
-import { dashboardForRole } from "@/lib/roles";
+import { dashboardForRole, normalizeRole } from "@/lib/roles";
 import type { UserRole } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -63,7 +63,7 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const { data: session } = authClient.useSession();
-  const role = session?.user?.role as UserRole | undefined;
+  const role = session?.user ? normalizeRole(session.user.role) : undefined;
   const dashboard = dashboardForRole(role);
 
   const allLinks = [

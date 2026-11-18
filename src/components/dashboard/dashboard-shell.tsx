@@ -32,6 +32,7 @@ import {
   DASHBOARD_HASH_EVENT,
   emitDashboardHash,
 } from "@/lib/dashboard-hash";
+import { normalizeRole } from "@/lib/roles";
 import type { UserRole } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Brand } from "@/components/shared/ui-kit";
@@ -87,7 +88,11 @@ export function DashboardShell({
   // initial markup. This also keeps the active item correct after sidebar
   // navigation without relying on a render-time `window` check.
   const [currentHash, setCurrentHash] = useState("#overview");
-  const items = navByRole[role];
+  // The session can contain a legacy or empty role. Fall back to the customer
+  // navigation so an otherwise valid session cannot crash server rendering.
+  const safeRole = normalizeRole(role);
+  const safeName = userName?.trim() || "Account";
+  const items = navByRole[safeRole];
 
   useEffect(() => {
     const sync = () => setCurrentHash(window.location.hash || "#overview");
@@ -174,11 +179,11 @@ export function DashboardShell({
         <div className="shrink-0 space-y-3 border-t border-border px-4 py-4">
           <div className="flex items-center gap-3 rounded-lg bg-muted/60 p-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-orange-500/15 text-sm font-bold text-orange-600 dark:text-orange-400">
-              {userName.slice(0, 1).toUpperCase()}
+              {safeName.slice(0, 1).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{userName}</p>
-              <Badge variant="outline" className="mt-0.5 capitalize text-[10px]">{role}</Badge>
+              <p className="truncate text-sm font-medium">{safeName}</p>
+              <Badge variant="outline" className="mt-0.5 capitalize text-[10px]">{safeRole}</Badge>
             </div>
           </div>
           <div className="flex items-center justify-between">
@@ -217,8 +222,8 @@ export function DashboardShell({
             <Menu className="size-5" />
           </Button>
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium">{userName}&apos;s workspace</p>
-            <p className="text-xs text-muted-foreground capitalize">{role} dashboard</p>
+            <p className="truncate text-sm font-medium">{safeName}&apos;s workspace</p>
+            <p className="text-xs text-muted-foreground capitalize">{safeRole} dashboard</p>
           </div>
           <div className="ml-auto">
             <Link
