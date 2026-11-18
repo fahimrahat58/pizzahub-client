@@ -33,8 +33,11 @@ export interface UserDto {
   address: string | null;
   subscriptionPlan: SubscriptionPlan;
   subscriptionStatus: SubscriptionStatus;
+  billingPlanId?: BillingPlan | null;
   stripeCustomerId: string | null;
   stripeSubscriptionId: string | null;
+  stripeCheckoutSessionId?: string | null;
+  stripePriceId?: string | null;
   subscriptionExpiresAt: string | null;
   cancelAtPeriodEnd: boolean;
   isPremium: boolean;
@@ -50,8 +53,11 @@ export interface SubscriptionStatusDto {
   isPremium: boolean;
   activeItemLimit: number | null;
   activeRestaurantLimit: number | null;
+  billingPlanId: BillingPlan | null;
   stripeCustomerId: string | null;
   stripeSubscriptionId: string | null;
+  stripeCheckoutSessionId: string | null;
+  stripePriceId: string | null;
   subscriptionExpiresAt: string | null;
   cancelAtPeriodEnd: boolean;
   hasBillingAccount: boolean;
