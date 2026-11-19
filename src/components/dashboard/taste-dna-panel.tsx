@@ -41,7 +41,7 @@ const PRICE_ZONES = ["Budget-friendly", "Mid-range", "Premium"] as const;
 
 const LoadingState = () => (
   <div className="space-y-8" aria-busy="true">
-    <div className="flex items-center gap-3 rounded-2xl border border-orange-500/20 bg-orange-500/5 px-4 py-3">
+    <div className="flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3">
       <PizzaMascot mood="happy" size={40} />
       <div className="min-w-0">
         <p className="text-sm font-semibold">Rolling in your flavors…</p>
@@ -89,7 +89,7 @@ const PriceZoneMeter = ({ label }: { label: string }) => {
             className={cn(
               "h-1.5 w-full rounded-full",
               index === activeIndex
-                ? "bg-gradient-to-r from-orange-400 to-amber-400 shadow-sm shadow-orange-500/30"
+                ? "bg-gradient-to-r from-chart-1 to-chart-2 shadow-sm shadow-primary/30"
                 : "bg-muted",
             )}
           />
@@ -97,7 +97,7 @@ const PriceZoneMeter = ({ label }: { label: string }) => {
             className={cn(
               "text-center text-[10px] leading-tight",
               index === activeIndex
-                ? "font-semibold text-orange-600 dark:text-orange-300"
+                ? "font-semibold text-primary dark:text-primary"
                 : "text-muted-foreground",
             )}
           >
@@ -190,10 +190,10 @@ export function TasteDnaPanel({
 
   return (
     <div className="space-y-8">
-      <Card className="overflow-hidden border-orange-500/30 bg-gradient-to-br from-orange-500/10 via-orange-500/5 to-transparent">
+      <Card className="overflow-hidden border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
         <CardHeader className="gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-start gap-3">
-            <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-100 to-amber-50 ring-1 ring-orange-500/20 dark:from-orange-500/15 dark:to-amber-500/5">
+            <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-chart-1/15 to-chart-2/10 ring-1 ring-primary/20 dark:from-chart-1/20 dark:to-chart-2/10">
               <PizzaMascot mood="happy" size={56} />
             </div>
             <div className="min-w-0 space-y-1">
@@ -207,7 +207,7 @@ export function TasteDnaPanel({
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2">
           <div className="flex min-w-0 items-center gap-3 rounded-xl border border-border/70 bg-card p-4">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-orange-500/10 text-orange-500">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <Activity className="size-5" />
             </div>
             <div className="min-w-0">
@@ -217,7 +217,7 @@ export function TasteDnaPanel({
           </div>
           <div className="min-w-0 rounded-xl border border-border/70 bg-card p-4">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-orange-500/10 text-orange-500">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <Wallet className="size-5" />
               </div>
               <div className="min-w-0">
@@ -238,7 +238,7 @@ export function TasteDnaPanel({
 
       <section className="space-y-3">
         <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <Flame className="size-5 text-orange-500" /> Your Favorite Flavors
+          <Flame className="size-5 text-primary" /> Your Favorite Flavors
         </h2>
         {profile.favoriteIngredients.length ? (
           <div className="flex flex-wrap gap-2">
@@ -255,7 +255,7 @@ export function TasteDnaPanel({
 
       <section className="space-y-3">
         <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <Pizza className="size-5 text-orange-500" /> Your Favorite Categories
+          <Pizza className="size-5 text-primary" /> Your Favorite Categories
         </h2>
         {profile.topCategories.length ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -265,7 +265,7 @@ export function TasteDnaPanel({
                 <Card key={entry.name} className="overflow-hidden transition-shadow hover:shadow-md">
                   <CardContent className="flex min-w-0 flex-col gap-2 py-4">
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400/25 to-amber-300/10 text-orange-600 dark:from-orange-500/25 dark:to-amber-500/5 dark:text-orange-300">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-chart-1/25 to-chart-2/10 text-primary dark:from-chart-1/25 dark:to-chart-2/10 dark:text-primary">
                         <Icon className="size-5" />
                       </div>
                       <div className="min-w-0">
@@ -280,7 +280,7 @@ export function TasteDnaPanel({
                       title={`Relative affinity score: ${entry.score}`}
                     >
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-orange-400 to-amber-400"
+                        className="h-full rounded-full bg-gradient-to-r from-chart-1 to-chart-2"
                         style={{ width: `${(entry.score / maxCategoryScore) * 100}%` }}
                       />
                     </div>
@@ -298,7 +298,7 @@ export function TasteDnaPanel({
 
       <section className="space-y-4">
         <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <Heart className="size-5 text-orange-500" /> Recommended For You
+          <Heart className="size-5 text-primary" /> Recommended For You
         </h2>
         {recommendations.length ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -309,10 +309,10 @@ export function TasteDnaPanel({
                   favorite={favoriteIds.includes(item.id)}
                   onChanged={onChanged}
                 />
-                <div className="mt-2 flex items-start gap-2.5 rounded-xl border border-orange-500/15 bg-orange-500/5 p-2.5">
+                <div className="mt-2 flex items-start gap-2.5 rounded-xl border border-primary/15 bg-primary/5 p-2.5">
                   <MatchMeter score={matchScore} />
                   <div className="min-w-0 flex-1 space-y-1.5">
-                    <p className="text-[11px] font-semibold text-orange-600 dark:text-orange-300">
+                    <p className="text-[11px] font-semibold text-primary dark:text-primary">
                       Taste Match
                     </p>
                     {reasons.length ? (
@@ -322,9 +322,9 @@ export function TasteDnaPanel({
                           return (
                             <span
                               key={`${reason}-${index}`}
-                              className="inline-flex items-center gap-1 rounded-full bg-card/80 px-1.5 py-0.5 text-[10px] leading-tight text-muted-foreground ring-1 ring-orange-500/10"
+                              className="inline-flex items-center gap-1 rounded-full bg-card/80 px-1.5 py-0.5 text-[10px] leading-tight text-muted-foreground ring-1 ring-primary/10"
                             >
-                              <Icon className="size-3 shrink-0 text-orange-500" />
+                              <Icon className="size-3 shrink-0 text-primary" />
                               {reason}
                             </span>
                           );

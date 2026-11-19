@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Loader2, MapPin, Star, Truck } from "lucide-react";
+import { ArrowLeft, Crown, Loader2, MapPin, Star, Truck } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -276,9 +276,16 @@ export function MenuDetail() {
               </div>
             ) : null}
             {item.vendorName ? (
-              <p className="text-sm text-muted-foreground">
-                Sold by{" "}
-                <span className="font-medium text-foreground/80">{item.vendorName}</span>
+              <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                <span>
+                  Sold by{" "}
+                  <span className="font-medium text-foreground/80">{item.vendorName}</span>
+                </span>
+                {item.vendorPremium ? (
+                  <Badge className="bg-amber-400 text-amber-950">
+                    <Crown className="size-3" /> Premium
+                  </Badge>
+                ) : null}
               </p>
             ) : null}
           </div>

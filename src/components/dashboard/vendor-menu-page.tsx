@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Loader2, Pencil, Plus, Store, Trash2 } from "lucide-react";
+import { Crown, Loader2, Pencil, Plus, Store, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { DeleteMenuDialog } from "@/components/dashboard/delete-menu-dialog";
@@ -115,7 +115,9 @@ export function VendorMenuPage() {
     (item) => item.isActive && item.approvalStatus === "approved",
   ).length;
   const limit = subscription?.activeItemLimit ?? 3;
-  const planNote = subscription?.isPremium
+  const isPremium = subscription?.isPremium === true;
+  const atFreeLimit = !isPremium && activeCount >= limit;
+  const planNote = isPremium
     ? `Premium plan · ${activeCount} active item(s), unlimited allowed.`
     : `Free plan · ${activeCount} of ${limit} active items used.`;
 
@@ -128,7 +130,8 @@ export function VendorMenuPage() {
         action={
           <div className="flex flex-wrap gap-2">
             <LinkButton href="/dashboard/vendor/subscription" variant="outline">
-              View plans
+              <Crown className="size-4" />
+              {isPremium ? "View plans" : "Upgrade to Premium"}
             </LinkButton>
             <Button onClick={openCreate} disabled={restaurants.length === 0}>
               <Plus className="size-4" /> Add Menu Item
@@ -136,6 +139,21 @@ export function VendorMenuPage() {
           </div>
         }
       />
+
+      {atFreeLimit ? (
+        <div className="flex flex-col gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-medium">Free active-item limit reached</p>
+            <p className="text-sm text-muted-foreground">
+              Free vendors can have a maximum of {limit} active menu items. Upgrade to Premium
+              to add more.
+            </p>
+          </div>
+          <LinkButton href="/dashboard/vendor/subscription" className="shrink-0">
+            <Crown className="size-4" /> Upgrade to Premium
+          </LinkButton>
+        </div>
+      ) : null}
 
       {restaurants.length === 0 ? (
         <EmptyState
@@ -173,7 +191,7 @@ export function VendorMenuPage() {
                         : "Unassigned"}
                     </p>
                   </div>
-                  <span className="font-bold text-orange-500">${item.price.toFixed(2)}</span>
+                  <span className="font-bold text-primary">${item.price.toFixed(2)}</span>
                 </div>
                 <p className="line-clamp-2 text-sm text-muted-foreground">{item.description}</p>
                 <p className="text-xs text-muted-foreground">

@@ -31,7 +31,7 @@ export function Brand({ className }: { className?: string }) {
       className={cn("text-2xl font-black tracking-tight", className)}
       aria-label="PizzaHub home"
     >
-      <span className="text-orange-500">Pizza</span>Hub
+      <span className="text-primary">Pizza</span>Hub
     </Link>
   );
 }
@@ -51,7 +51,7 @@ export function PageHeader({
     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div className="space-y-1">
         {eyebrow ? (
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-500">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
             {eyebrow}
           </p>
         ) : null}
@@ -236,7 +236,7 @@ export function ImageUpload({
       <span className="text-sm font-medium">{label}</span>
       <label
         className={cn(
-          "relative flex cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border border-dashed border-border bg-muted/20 text-center transition hover:border-orange-500/60",
+          "relative flex cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border border-dashed border-border bg-muted/20 text-center transition hover:border-primary/60",
           aspect,
         )}
       >
@@ -264,9 +264,9 @@ export function ImageUpload({
           )}
         >
           {uploading ? (
-            <Loader2 className="size-6 animate-spin text-orange-500" />
+            <Loader2 className="size-6 animate-spin text-primary" />
           ) : (
-            <ImagePlus className="size-6 text-orange-500" />
+            <ImagePlus className="size-6 text-primary" />
           )}
           <span className="text-sm font-medium">
             {uploading ? "Uploading..." : value ? "Change image" : "Choose an image"}

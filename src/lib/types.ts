@@ -146,6 +146,8 @@ export interface MenuItemDto {
 export interface RestaurantDto {
   id: string;
   vendorId: string;
+  /** Derived from the vendor's verified subscription state, never client input. */
+  vendorPremium: boolean;
   name: string;
   description: string;
   image: string;
@@ -240,6 +242,43 @@ export interface ListResponse<T> {
   success: boolean;
   items: T[];
   pagination: Pagination;
+}
+
+export interface DashboardMetricPoint {
+  label: string;
+  value: number;
+}
+
+/** Role-scoped aggregates computed by the server from authenticated data. */
+export interface DashboardSummary {
+  role: UserRole;
+  stats: {
+    totalOrders: number;
+    pendingOrders: number;
+    completedOrders: number;
+    favorites?: number;
+    totalRestaurants?: number;
+    activeMenuItems?: number;
+    pendingMenuItems?: number;
+    plan?: SubscriptionPlan;
+    isPremium?: boolean;
+    totalUsers?: number;
+    totalVendors?: number;
+    totalCustomers?: number;
+    totalMenuItems?: number;
+    totalTransactions?: number;
+  };
+  charts: {
+    orderTrend: DashboardMetricPoint[];
+    orderStatus: DashboardMetricPoint[];
+    orderValueTrend?: DashboardMetricPoint[];
+    userGrowth?: DashboardMetricPoint[];
+  };
+}
+
+export interface DashboardSummaryResponse {
+  success: boolean;
+  summary: DashboardSummary;
 }
 
 export interface AdminStats {

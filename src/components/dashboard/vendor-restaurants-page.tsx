@@ -199,7 +199,7 @@ export function VendorRestaurantsPage() {
                   href={`/restaurants/${restaurant.id}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-block text-xs font-semibold text-orange-500 hover:underline"
+                  className="inline-block text-xs font-semibold text-primary hover:underline"
                 >
                   View public page ↗
                 </a>

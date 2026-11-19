@@ -31,11 +31,11 @@ export function RestaurantLimitDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="gap-0 overflow-hidden p-0 shadow-2xl shadow-black/10 ring-orange-500/20 dark:shadow-black/50 dark:ring-orange-400/20 sm:max-w-lg"
+        className="gap-0 overflow-hidden p-0 shadow-2xl shadow-black/10 ring-primary/20 dark:shadow-black/50 dark:ring-primary/20 sm:max-w-lg"
       >
-        <div className="relative bg-gradient-to-br from-orange-500/15 via-orange-500/5 to-transparent px-6 pt-7 pb-6 sm:px-8">
-          <div className="pointer-events-none absolute -top-12 -right-12 size-36 rounded-full bg-orange-500/10 blur-2xl" />
-          <div className="relative mb-5 flex size-12 items-center justify-center rounded-2xl bg-orange-500/15 text-orange-600 ring-1 ring-orange-500/20 dark:text-orange-400">
+        <div className="relative bg-gradient-to-br from-primary/15 via-primary/5 to-transparent px-6 pt-7 pb-6 sm:px-8">
+          <div className="pointer-events-none absolute -top-12 -right-12 size-36 rounded-full bg-primary/10 blur-2xl" />
+          <div className="relative mb-5 flex size-12 items-center justify-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/20 dark:text-primary">
             <Crown className="size-6" />
           </div>
           <DialogHeader className="relative gap-3 pr-8">

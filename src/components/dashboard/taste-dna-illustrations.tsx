@@ -266,7 +266,7 @@ export const toppingTone = (name: string): string => {
     return "border-amber-500/20 bg-amber-500/10 text-amber-800 dark:text-amber-300";
   }
   if (/tomato|sauce|pineapple|onion/.test(value)) {
-    return "border-orange-500/15 bg-orange-500/10 text-orange-700 dark:text-orange-300";
+    return "border-primary/15 bg-primary/10 text-primary dark:text-primary";
   }
   return "border-border/60 bg-secondary text-muted-foreground";
 };
@@ -288,21 +288,21 @@ export function MatchMeter({ score, className }: { score: number; className?: st
           cx="22"
           cy="22"
           r={radius}
-          className="fill-orange-500/5 stroke-orange-500/15"
+          className="fill-primary/5 stroke-primary/15"
           strokeWidth="4"
         />
         <circle
           cx="22"
           cy="22"
           r={radius}
-          className="stroke-orange-500 transition-[stroke-dashoffset] duration-500"
+          className="stroke-primary transition-[stroke-dashoffset] duration-500"
           strokeWidth="4"
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={circumference * (1 - percent / 100)}
         />
       </svg>
-      <span className="absolute inset-0 flex items-center justify-center gap-px text-xs font-bold text-orange-600 dark:text-orange-300">
+      <span className="absolute inset-0 flex items-center justify-center gap-px text-xs font-bold text-primary dark:text-primary">
         {percent}
         <span className="text-[9px]">%</span>
       </span>

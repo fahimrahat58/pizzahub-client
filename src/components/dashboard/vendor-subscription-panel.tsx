@@ -279,7 +279,7 @@ export function VendorSubscriptionPanel() {
         description="Stripe securely handles all payments. Premium stays active only after Stripe confirms the subscription."
       />
 
-      <Card className="overflow-hidden border-orange-500/20 bg-gradient-to-br from-orange-500/5 to-transparent">
+      <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
         <CardContent className="flex flex-col gap-4 py-5 md:flex-row md:items-center md:justify-between">
           <div className="min-w-0 space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
@@ -411,14 +411,14 @@ export function VendorSubscriptionPanel() {
             <Card
               key={card.id}
               className={cn(
-                "flex min-w-0 flex-col border-orange-500/40 shadow-lg shadow-orange-500/5",
-                isCurrentPlan && "ring-2 ring-orange-500/60",
+                "flex min-w-0 flex-col border-primary/40 shadow-lg shadow-primary/5",
+                isCurrentPlan && "ring-2 ring-primary/60",
               )}
             >
               <CardHeader className="min-w-0 gap-3 sm:gap-4">
                 <CardTitle className="flex min-w-0 flex-wrap items-center justify-between gap-2">
                   <span className="flex min-w-0 items-center gap-2">
-                    <Sparkles className="size-5 shrink-0 text-orange-500" />
+                    <Sparkles className="size-5 shrink-0 text-primary" />
                     <span className="min-w-0 break-words text-sm sm:text-base">
                       {card.name}
                     </span>
@@ -513,7 +513,7 @@ export function VendorSubscriptionPanel() {
                   >
                     <td className="py-3 pr-4">{label}</td>
                     <td className="py-3 pr-4 text-muted-foreground">{free}</td>
-                    <td className="py-3 font-medium text-orange-600 dark:text-orange-400">
+                    <td className="py-3 font-medium text-primary dark:text-primary">
                       {premium}
                     </td>
                   </tr>
@@ -529,7 +529,7 @@ export function VendorSubscriptionPanel() {
         Need help?{" "}
         <Link
           href="/contact-support"
-          className="text-orange-500 hover:underline"
+          className="text-primary hover:underline"
         >
           Contact support
         </Link>

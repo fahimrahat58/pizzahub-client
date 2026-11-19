@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Save } from "lucide-react";
+import { Crown, Loader2, Save } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { ProfileImageUpload } from "@/components/dashboard/profile-image-upload";
 import { ErrorState } from "@/components/shared/ui-kit";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -165,10 +166,17 @@ export function ProfilePanel({ role }: { role: "customer" | "vendor" | "admin" }
               </div>
               <div className="rounded-lg bg-muted/50 p-3 text-sm">
                 <p className="text-xs text-muted-foreground">Plan</p>
-                <p className="font-medium capitalize">
-                  {profile?.subscriptionPlan}
-                  {profile?.isPremium && purchasedCycleLabel ? ` · ${purchasedCycleLabel}` : ""}
-                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-medium capitalize">
+                    {profile?.subscriptionPlan}
+                    {profile?.isPremium && purchasedCycleLabel ? ` · ${purchasedCycleLabel}` : ""}
+                  </p>
+                  {profile?.isPremium ? (
+                    <Badge className="bg-amber-400 text-amber-950">
+                      <Crown className="size-3" /> Premium
+                    </Badge>
+                  ) : null}
+                </div>
               </div>
             </div>
             <Button type="submit" disabled={form.formState.isSubmitting}>

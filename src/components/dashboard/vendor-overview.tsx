@@ -4,8 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   CheckCircle2,
   ClipboardList,
-  Eye,
-  EyeOff,
+  Crown,
   Loader2,
   Pizza,
   Plus,
@@ -14,6 +13,8 @@ import {
 } from "lucide-react";
 
 import { ChartCard } from "@/components/dashboard/chart-card";
+import { DashboardOverviewSkeleton } from "@/components/dashboard/dashboard-overview-skeleton";
+import { StatCard } from "@/components/dashboard/stat-card";
 import {
   ApprovalBadge,
   EmptyState,
@@ -31,6 +32,8 @@ import {
   getSubscriptionStatus,
 } from "@/lib/subscriptions";
 import type {
+  DashboardSummary,
+  DashboardSummaryResponse,
   ListResponse,
   MenuItemDto,
   OrderDto,
@@ -43,6 +46,7 @@ export function VendorOverview() {
   const [orders, setOrders] = useState<OrderDto[]>([]);
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
   const [subscription, setSubscription] = useState<SubscriptionStatusDto | null>(null);
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -50,11 +54,11 @@ export function VendorOverview() {
     setLoading(true);
     setError("");
     try {
-      const [menuData, orderData, restaurantData, subscriptionData] =
+      const [menuData, orderData, restaurantData, subscriptionData, summaryData] =
         await Promise.all([
-          apiFetch<ListResponse<MenuItemDto>>("/api/menu/vendor/mine?limit=100"),
+          apiFetch<ListResponse<MenuItemDto>>("/api/menu/vendor/mine?limit=50"),
           apiFetch<{ success: boolean; orders: OrderDto[] }>(
-            "/api/orders/vendor?limit=100",
+            "/api/orders/vendor?limit=50",
           ),
           apiFetch<{
             success: boolean;
@@ -62,9 +66,11 @@ export function VendorOverview() {
             restaurant: RestaurantDto | null;
           }>("/api/restaurants/mine"),
           getSubscriptionStatus(),
+          apiFetch<DashboardSummaryResponse>("/api/dashboard/summary"),
         ]);
       setMenu(menuData.items);
       setOrders(orderData.orders);
+      setSummary(summaryData.summary);
       setRestaurants(
         restaurantData.restaurants ??
           (restaurantData.restaurant ? [restaurantData.restaurant] : []),
@@ -83,21 +89,14 @@ export function VendorOverview() {
     void Promise.resolve().then(load);
   }, [load]);
 
-  if (loading) {
+  if (loading) return <DashboardOverviewSkeleton />;
+  if (error) return <ErrorState message={error} onRetry={() => void load()} />;
+  if (!summary) {
     return (
-      <div className="flex items-center justify-center py-20 text-muted-foreground">
-        <Loader2 className="mr-2 size-5 animate-spin" /> Loading your dashboard...
-      </div>
+      <ErrorState message="Your dashboard summary is unavailable." onRetry={() => void load()} />
     );
   }
-  if (error) return <ErrorState message={error} onRetry={() => void load()} />;
 
-  const published = menu.filter(
-    (item) => item.isActive && item.approvalStatus === "approved",
-  ).length;
-  const pendingOrders = orders.filter((order) => order.status === "pending").length;
-  const acceptedOrders = orders.filter((order) => order.status === "accepted").length;
-  const completedOrders = orders.filter((order) => order.status === "delivered").length;
   const isPremium = subscription?.isPremium === true;
   const purchasedCycleLabel = isPremium
     ? billingIntervalLabel(getPurchasedBillingInterval(subscription))
@@ -110,17 +109,6 @@ export function VendorOverview() {
       (menuCountByRestaurant.get(item.restaurantId) ?? 0) + 1,
     );
   }
-
-  const stats = [
-    { label: "Restaurants", value: restaurants.length, icon: Store },
-    { label: "Menu items", value: menu.length, icon: Pizza },
-    { label: "Published", value: published, icon: Eye },
-    { label: "Unpublished", value: menu.length - published, icon: EyeOff },
-    { label: "Total orders", value: orders.length, icon: ClipboardList },
-    { label: "Pending orders", value: pendingOrders, icon: Loader2 },
-    { label: "Accepted orders", value: acceptedOrders, icon: CheckCircle2 },
-    { label: "Completed orders", value: completedOrders, icon: CheckCircle2 },
-  ];
 
   return (
     <div className="space-y-8">
@@ -140,65 +128,79 @@ export function VendorOverview() {
         <LinkButton href="/dashboard/vendor/orders" variant="outline">
           <ClipboardList className="size-4" /> View Orders
         </LinkButton>
-        <LinkButton href="/dashboard/vendor/subscription" variant="outline">
-          <Sparkles className="size-4" /> Manage Subscription
+        <LinkButton
+          href="/dashboard/vendor/subscription"
+          variant={isPremium ? "outline" : "default"}
+        >
+          {isPremium ? (
+            <Sparkles className="size-4" />
+          ) : (
+            <Crown className="size-4" />
+          )}
+          {isPremium ? "Manage Subscription" : "Upgrade to Premium"}
         </LinkButton>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {stats.map(({ label, value, icon: Icon }) => (
-          <Card key={label}>
-            <CardContent className="flex items-center gap-4 py-5">
-              <div className="flex size-11 items-center justify-center rounded-xl bg-orange-500/10 text-orange-500">
-                <Icon className="size-5" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{value}</p>
-                <p className="text-xs text-muted-foreground">{label}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        <Card className="border-orange-500/30">
-          <CardContent className="flex items-center gap-4 py-5">
-            <div className="flex size-11 items-center justify-center rounded-xl bg-orange-500/15 text-orange-500">
-              <Sparkles className="size-5" />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <StatCard label="Restaurants" value={summary.stats.totalRestaurants ?? restaurants.length} icon={Store} />
+        <StatCard label="Active menu items" value={summary.stats.activeMenuItems ?? 0} icon={Pizza} />
+        <StatCard label="Total orders" value={summary.stats.totalOrders} icon={ClipboardList} />
+        <StatCard label="Pending orders" value={summary.stats.pendingOrders} icon={Loader2} />
+        <StatCard label="Completed orders" value={summary.stats.completedOrders} icon={CheckCircle2} />
+        <Card className="min-w-0 border-primary/30">
+          <CardContent className="flex items-start gap-3 p-4 sm:p-5">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              {isPremium ? <Sparkles className="size-5" /> : <Crown className="size-5" />}
             </div>
-            <div>
-              <p className="text-2xl font-bold">
-                {isPremium ? "Premium" : "Free"}
-                {purchasedCycleLabel ? (
-                  <span className="ml-2 text-sm font-medium text-orange-500">
-                    {purchasedCycleLabel}
-                  </span>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-2xl font-bold">
+                  {isPremium ? "Premium" : "Free"}
+                  {purchasedCycleLabel ? (
+                    <span className="ml-2 text-sm font-medium text-primary">
+                      {purchasedCycleLabel}
+                    </span>
+                  ) : null}
+                </p>
+                {isPremium ? (
+                  <Badge className="bg-amber-400 text-amber-950">
+                    <Crown className="size-3" /> Premium vendor
+                  </Badge>
                 ) : null}
+              </div>
+              <p className="mt-0.5 text-xs text-muted-foreground">Current plan</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {isPremium
+                  ? "Unlimited active items · Premium badge · Featured placement"
+                  : "3 active items · Upgrade for unlimited items and featured placement"}
               </p>
-              <p className="text-xs text-muted-foreground">Current plan</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         <ChartCard
-          title="Kitchen activity"
-          description="Orders across your current workflow."
-          data={[
-            { label: "Pending", value: pendingOrders },
-            { label: "Accepted", value: acceptedOrders },
-            { label: "Preparing", value: orders.filter((order) => order.status === "preparing").length },
-            { label: "Out for delivery", value: orders.filter((order) => order.status === "out_for_delivery").length },
-            { label: "Delivered", value: completedOrders },
-          ]}
+          title="Order activity"
+          description="Orders received over the last 7 days."
+          data={summary.charts.orderTrend}
+          variant="line"
+          emptyMessage="No orders in the last 7 days"
         />
         <ChartCard
-          title="Menu status"
-          description="Published versus unpublished pizzas."
-          data={[
-            { label: "Published", value: published },
-            { label: "Unpublished", value: menu.length - published },
-            { label: "Restaurants", value: restaurants.length },
-          ]}
+          title="Order status"
+          description="All of your orders by current status."
+          data={summary.charts.orderStatus}
+          variant="donut"
+          emptyMessage="No orders yet"
+        />
+        <ChartCard
+          title="Order value"
+          description="Value of orders received over the last 7 days."
+          data={summary.charts.orderValueTrend ?? []}
+          variant="line"
+          formatValue={(value) => `$${value.toFixed(2)}`}
+          emptyMessage="No order value yet"
         />
       </div>
 
@@ -222,7 +224,7 @@ export function VendorOverview() {
                     <p className="truncate text-xs text-muted-foreground">
                       {order.menuItemSnapshot.name} · {order.customerSnapshot.name}
                     </p>
-                    <p className="mt-1 text-xs text-orange-500">
+                    <p className="mt-1 text-xs text-primary">
                       {order.restaurantName ??
                         order.menuItemSnapshot.restaurantName ??
                         "Restaurant"}
@@ -306,7 +308,7 @@ export function VendorOverview() {
                     <p className="truncate text-xs text-muted-foreground">
                       {restaurant.address}
                     </p>
-                    <p className="mt-1 text-xs font-medium text-orange-500">
+                    <p className="mt-1 text-xs font-medium text-primary">
                       {menuCountByRestaurant.get(restaurant.id) ?? 0} menu item(s)
                     </p>
                   </div>

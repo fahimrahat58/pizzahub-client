@@ -8,14 +8,17 @@ import {
   Loader2,
   Pizza,
   ShieldCheck,
+  Store,
   UsersRound,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminReviewsPanel } from "@/components/dashboard/admin-reviews-panel";
 import { ChartCard } from "@/components/dashboard/chart-card";
+import { DashboardOverviewSkeleton } from "@/components/dashboard/dashboard-overview-skeleton";
 import { OrderCard } from "@/components/dashboard/order-card";
 import { ProfilePanel } from "@/components/dashboard/profile-panel";
+import { StatCard } from "@/components/dashboard/stat-card";
 import {
   ApprovalBadge,
   ConfirmDialog,
@@ -49,6 +52,8 @@ import { authClient } from "@/lib/auth-client";
 import { billingIntervalLabel } from "@/lib/subscriptions";
 import type {
   AdminDashboardResponse,
+  DashboardSummary,
+  DashboardSummaryResponse,
   ListResponse,
   MenuItemDto,
   OrderDto,
@@ -120,6 +125,7 @@ export function AdminDashboard({ initialTab = "overview" }: { initialTab?: Tab }
   };
 
   const [summary, setSummary] = useState<AdminStatsPayload | null>(null);
+  const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItemDto[]>([]);
   const [menuSearchInput, setMenuSearchInput] = useState("");
   const [menuSearch, setMenuSearch] = useState("");
@@ -165,14 +171,16 @@ export function AdminDashboard({ initialTab = "overview" }: { initialTab?: Tab }
     setCoreLoading(true);
     setCoreError("");
     try {
-      const menuParams = new URLSearchParams({ limit: "100" });
+      const menuParams = new URLSearchParams({ limit: "50" });
       if (menuSearch.trim()) menuParams.set("search", menuSearch.trim());
-      const [statsData, menuData, orderData] = await Promise.all([
+      const [statsData, menuData, orderData, summaryData] = await Promise.all([
         apiFetch<AdminStatsPayload>("/api/admin/stats"),
         apiFetch<ListResponse<MenuItemDto>>(`/api/menu/admin/all?${menuParams}`),
-        apiFetch<{ success: boolean; orders: OrderDto[] }>("/api/orders/admin?limit=100"),
+        apiFetch<{ success: boolean; orders: OrderDto[] }>("/api/orders/admin?limit=50"),
+        apiFetch<DashboardSummaryResponse>("/api/dashboard/summary"),
       ]);
       setSummary(statsData);
+      setDashboardSummary(summaryData.summary);
       setMenuItems(menuData.items);
       setOrders(orderData.orders);
     } catch (error) {
@@ -388,15 +396,17 @@ export function AdminDashboard({ initialTab = "overview" }: { initialTab?: Tab }
     }
   };
 
-  const stats = summary?.stats;
-  const statCards = stats
+  const charts = dashboardSummary?.charts;
+  const statCards = dashboardSummary
     ? [
-        { label: "Total users", value: stats.totalUsers, icon: UsersRound },
-        { label: "Vendors", value: stats.totalVendors, icon: ShieldCheck },
-        { label: "Customers", value: stats.totalCustomers, icon: UsersRound },
-        { label: "Menu items", value: stats.totalMenuItems, icon: Pizza },
-        { label: "Pending items", value: stats.pendingMenuItems, icon: ClipboardList },
-        { label: "Transactions", value: stats.totalTransactions, icon: CreditCard },
+        { label: "Total users", value: dashboardSummary.stats.totalUsers ?? 0, icon: UsersRound },
+        { label: "Vendors", value: dashboardSummary.stats.totalVendors ?? 0, icon: ShieldCheck },
+        { label: "Customers", value: dashboardSummary.stats.totalCustomers ?? 0, icon: UsersRound },
+        { label: "Restaurants", value: dashboardSummary.stats.totalRestaurants ?? 0, icon: Store },
+        { label: "Menu items", value: dashboardSummary.stats.totalMenuItems ?? 0, icon: Pizza },
+        { label: "Pending items", value: dashboardSummary.stats.pendingMenuItems ?? 0, icon: ClipboardList },
+        { label: "Orders", value: dashboardSummary.stats.totalOrders, icon: ClipboardList },
+        { label: "Transactions", value: dashboardSummary.stats.totalTransactions ?? 0, icon: CreditCard },
       ]
     : [];
 
@@ -416,7 +426,7 @@ export function AdminDashboard({ initialTab = "overview" }: { initialTab?: Tab }
             onClick={() => openTab(value)}
             className={cn(
               "rounded-lg px-3.5 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground",
-              tab === value && "bg-orange-500/10 text-orange-600 dark:text-orange-400",
+              tab === value && "bg-primary/10 text-primary",
             )}
           >
             {tabLabels[value]}
@@ -430,9 +440,7 @@ export function AdminDashboard({ initialTab = "overview" }: { initialTab?: Tab }
       tab !== "transactions" &&
       tab !== "reviews" &&
       tab !== "profile" ? (
-        <div className="flex items-center justify-center py-24 text-muted-foreground">
-          <Loader2 className="mr-2 size-5 animate-spin" /> Loading admin data...
-        </div>
+        <DashboardOverviewSkeleton />
       ) : coreError &&
         tab !== "users" &&
         tab !== "billing" &&
@@ -440,41 +448,45 @@ export function AdminDashboard({ initialTab = "overview" }: { initialTab?: Tab }
         tab !== "reviews" &&
         tab !== "profile" ? (
         <ErrorState message={coreError} onRetry={() => void loadCore()} />
+      ) : tab === "overview" && !dashboardSummary ? (
+        <ErrorState message="Your dashboard summary is unavailable." onRetry={() => void loadCore()} />
       ) : tab === "overview" ? (
         <div className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {statCards.map(({ label, value, icon: Icon }) => (
-              <Card key={label}>
-                <CardContent className="flex items-center gap-4 py-5">
-                  <div className="flex size-11 items-center justify-center rounded-xl bg-orange-500/10 text-orange-500">
-                    <Icon className="size-5" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">{value}</p>
-                    <p className="text-xs text-muted-foreground">{label}</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <StatCard key={label} label={label} value={value} icon={Icon} />
             ))}
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
             <ChartCard
-              title="Community mix"
-              description="Accounts currently registered on PizzaHub."
-              data={[
-                { label: "Customers", value: stats?.totalCustomers ?? 0 },
-                { label: "Vendors", value: stats?.totalVendors ?? 0 },
-                { label: "Menu items", value: stats?.totalMenuItems ?? 0 },
-              ]}
+              title="Order activity"
+              description="Orders placed across PizzaHub over the last 7 days."
+              data={charts?.orderTrend ?? []}
+              variant="line"
+              emptyMessage="No orders in the last 7 days"
             />
             <ChartCard
-              title="Moderation queue"
-              description="Listings and billing activity awaiting attention."
-              data={[
-                { label: "Pending menu items", value: stats?.pendingMenuItems ?? 0 },
-                { label: "Transactions", value: stats?.totalTransactions ?? 0 },
-              ]}
+              title="Order status"
+              description="All platform orders by current status."
+              data={charts?.orderStatus ?? []}
+              variant="donut"
+              emptyMessage="No orders yet"
+            />
+            <ChartCard
+              title="Order value"
+              description="Value of orders placed over the last 7 days."
+              data={charts?.orderValueTrend ?? []}
+              variant="line"
+              formatValue={(value) => `$${value.toFixed(2)}`}
+              emptyMessage="No order value yet"
+            />
+            <ChartCard
+              title="New accounts"
+              description="Registrations over the last 7 days."
+              data={charts?.userGrowth ?? []}
+              variant="line"
+              emptyMessage="No new accounts"
             />
           </div>
 
@@ -514,7 +526,7 @@ export function AdminDashboard({ initialTab = "overview" }: { initialTab?: Tab }
                           {order.menuItemSnapshot.name} · {formatDate(order.createdAt)}
                         </p>
                       </div>
-                      <span className="text-sm font-semibold text-orange-500">
+                      <span className="text-sm font-semibold text-primary">
                         ${order.totalPrice.toFixed(2)}
                       </span>
                     </div>
@@ -779,14 +791,14 @@ export function AdminDashboard({ initialTab = "overview" }: { initialTab?: Tab }
               {billingVendors.map((vendor) => (
                 <Card key={vendor.id}>
                   <CardContent className="flex flex-wrap items-start gap-4 py-4">
-                    <div className="flex size-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-500">
+                    <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                       <CreditCard className="size-5" />
                     </div>
                     <div className="min-w-52 flex-1 space-y-1.5">
                       <p className="font-medium">
                         {vendor.businessName || vendor.name}
                         {vendor.isPremium ? (
-                          <Badge className="ml-2 bg-orange-500 text-white">Premium</Badge>
+                          <Badge className="ml-2 bg-primary text-primary-foreground">Premium</Badge>
                         ) : (
                           <Badge variant="outline" className="ml-2">Free</Badge>
                         )}

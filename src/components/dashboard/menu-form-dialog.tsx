@@ -100,7 +100,7 @@ function AdditionalImages({
         {images.length < 5 ? (
           <label
             className={cn(
-              "flex size-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-border bg-muted/20 text-xs text-muted-foreground transition hover:border-orange-500/60",
+              "flex size-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-border bg-muted/20 text-xs text-muted-foreground transition hover:border-primary/60",
               uploading && "pointer-events-none opacity-60",
             )}
           >

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Building2, Eye, EyeOff, Info, Loader2, ShoppingBag, UtensilsCrossed } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { useForm, type FieldErrors } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -44,18 +44,21 @@ const registerSchema = z
 
 type RegisterValues = z.infer<typeof registerSchema>;
 
-const friendlyAuthError = (message: string): string => {
-  if (/already|exist|duplicate|taken/i.test(message)) {
-    return "An account with that email already exists. Try signing in instead.";
+const friendlySignUpError = (message?: string | null): string => {
+  const detail = (message ?? "").toLowerCase();
+  if (/already|exist|duplicate|taken|uniqu/.test(detail)) {
+    return "An account with this email already exists.";
   }
-  if (/internal server|unavailable|failed to fetch|network/i.test(message)) {
-    return "We couldn't complete registration right now. Please try again in a moment.";
+  if (/validation|password|invalid|required|format/.test(detail)) {
+    return "Please check your information.";
   }
-  return message;
+  return "Unable to create your account. Please try again.";
 };
 
 export default function RegisterPage() {
   const router = useRouter();
+  const submittingRef = useRef(false);
+  const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -81,10 +84,21 @@ export default function RegisterPage() {
 
   const role = watch("role");
 
+  const onInvalid = (formErrors: FieldErrors<RegisterValues>) => {
+    if (formErrors.confirmPassword?.message === "Passwords do not match") {
+      toast.error("Passwords do not match.", { id: "sign-up-error" });
+      return;
+    }
+    toast.error("Please check your information.", { id: "sign-up-error" });
+  };
+
   const onSubmit = async (values: RegisterValues) => {
     // A profile image may still be in flight; submitting early would create an
     // account without the uploaded URL.
-    if (imageUploading) return;
+    if (submittingRef.current || imageUploading) return;
+    submittingRef.current = true;
+    setSubmitting(true);
+
     try {
       const { data, error } = await authClient.signUp.email({
         name: values.name,
@@ -95,7 +109,7 @@ export default function RegisterPage() {
       });
 
       if (error) {
-        toast.error(friendlyAuthError(error.message ?? "Registration failed"));
+        toast.error(friendlySignUpError(error.message), { id: "sign-up-error" });
         return;
       }
 
@@ -104,17 +118,22 @@ export default function RegisterPage() {
       const session = await authClient.getSession();
       const role = session.data?.user.role ?? data?.user.role;
       if (session.error || !role) {
-        toast.error("We couldn't load your session. Please try again.");
+        toast.error("Unable to create your account. Please try again.", {
+          id: "sign-up-error",
+        });
         return;
       }
 
-      toast.success("Welcome to PizzaHub!");
+      toast.success("Account created successfully!", { id: "sign-up-success" });
       router.replace(postAuthDestination(role));
       router.refresh();
-    } catch (error) {
-      toast.error(
-        friendlyAuthError(error instanceof Error ? error.message : "Registration failed"),
-      );
+    } catch {
+      toast.error("Unable to create your account. Please try again.", {
+        id: "sign-up-error",
+      });
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
     }
   };
 
@@ -134,7 +153,7 @@ export default function RegisterPage() {
   return (
     <AuthShell
       title="Sign Up"
-      subtitle="Choose how you want to use PizzaHub. You can always change your role later."
+      subtitle="Choose how you want to use PizzaHub."
       footer={
         <>
           Already have an account?{" "}
@@ -144,7 +163,12 @@ export default function RegisterPage() {
         </>
       }
     >
-      <form onSubmit={handleSubmit((values) => void onSubmit(values))} className="space-y-5">
+      <form
+        onSubmit={(event) => {
+          void handleSubmit(onSubmit, onInvalid)(event);
+        }}
+        className="space-y-5"
+      >
         <div className="space-y-2">
           <Label>Account Role</Label>
           <div className="grid grid-cols-2 gap-3">
@@ -287,16 +311,17 @@ export default function RegisterPage() {
           type="submit"
           className="w-full"
           size="lg"
-          disabled={isSubmitting || imageUploading}
+          disabled={submitting || isSubmitting || imageUploading}
+          aria-busy={submitting || isSubmitting || imageUploading}
         >
-          {isSubmitting || imageUploading ? (
+          {submitting || isSubmitting || imageUploading ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
             <UtensilsCrossed className="size-4" />
           )}
           {imageUploading
             ? "Finishing image upload..."
-            : isSubmitting
+            : submitting || isSubmitting
               ? "Creating account..."
               : "Sign Up"}
         </Button>

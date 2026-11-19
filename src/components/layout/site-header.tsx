@@ -1,11 +1,12 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ChevronDown,
   LayoutDashboard,
+  Loader2,
   LogOut,
   Menu,
   Settings,
@@ -134,6 +135,7 @@ const tasteDnaLink = { href: "/taste-dna", label: "Taste DNA" };
 
 export function SiteHeader() {
   const router = useRouter();
+  const signingOutRef = useRef(false);
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const { data: session, isPending: sessionPending } = authClient.useSession();
@@ -162,15 +164,23 @@ export function SiteHeader() {
   );
 
   const handleSignOut = async () => {
+    if (signingOutRef.current) return;
+    signingOutRef.current = true;
     setSigningOut(true);
+
     try {
+      const { error } = await authClient.signOut();
+      if (error) throw new Error(error.message ?? "Sign out failed");
+      // Sync the session atom before navigating so /login cannot briefly reuse
+      // a stale authenticated session and redirect away.
+      await authClient.getSession();
       clearApiToken();
-      await authClient.signOut({ fetchOptions: { onSuccess: () => router.push("/") } });
-      toast.success("Signed out");
+      toast.success("Signed out successfully!", { id: "sign-out-success" });
+      router.replace("/login");
       router.refresh();
     } catch {
-      toast.error("Could not sign out. Please try again.");
-    } finally {
+      toast.error("Unable to sign out. Please try again.", { id: "sign-out-error" });
+      signingOutRef.current = false;
       setSigningOut(false);
     }
   };
@@ -255,9 +265,11 @@ export function SiteHeader() {
                 <DropdownMenuItem
                   variant="destructive"
                   disabled={signingOut}
+                  aria-busy={signingOut}
                   onClick={() => void handleSignOut()}
                 >
-                  <LogOut /> Logout
+                  {signingOut ? <Loader2 className="animate-spin" /> : <LogOut />}
+                  {signingOut ? "Signing out..." : "Logout"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -342,9 +354,15 @@ export function SiteHeader() {
                   type="button"
                   onClick={() => void handleSignOut()}
                   disabled={signingOut}
+                  aria-busy={signingOut}
                   className="flex items-center gap-2 rounded-md px-3 py-2.5 text-left text-sm font-medium text-destructive hover:bg-destructive/10"
                 >
-                  <LogOut className="size-4" /> Logout
+                  {signingOut ? (
+                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <LogOut className="size-4" aria-hidden="true" />
+                  )}
+                  {signingOut ? "Signing out..." : "Logout"}
                 </button>
               </>
             ) : (

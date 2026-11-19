@@ -2,16 +2,23 @@
 
 import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { CheckCircle2, ClipboardList, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, ClipboardList, Heart, Loader2 } from "lucide-react";
 
 import { ChartCard } from "@/components/dashboard/chart-card";
+import { DashboardOverviewSkeleton } from "@/components/dashboard/dashboard-overview-skeleton";
 import { OrderCard } from "@/components/dashboard/order-card";
 import { ProfilePanel } from "@/components/dashboard/profile-panel";
+import { StatCard } from "@/components/dashboard/stat-card";
 import { PizzaCard } from "@/components/public/cards";
 import { EmptyState, ErrorState, LinkButton, PageHeader } from "@/components/shared/ui-kit";
-import { Card, CardContent } from "@/components/ui/card";
 import { apiFetch } from "@/lib/api";
-import type { ListResponse, MenuItemDto, OrderDto } from "@/lib/types";
+import type {
+  DashboardSummary,
+  DashboardSummaryResponse,
+  ListResponse,
+  MenuItemDto,
+  OrderDto,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useHashTab } from "@/lib/use-hash-tab";
 
@@ -42,6 +49,7 @@ export function CustomerDashboard() {
   const [tab, setTab] = useHashTab<Tab>("overview", TABS);
   const [orders, setOrders] = useState<OrderDto[]>([]);
   const [favorites, setFavorites] = useState<MenuItemDto[]>([]);
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -49,12 +57,14 @@ export function CustomerDashboard() {
     setLoading(true);
     setError("");
     try {
-      const [orderData, favoriteData] = await Promise.all([
-        apiFetch<{ success: boolean; orders: OrderDto[] }>("/api/orders/my?limit=100"),
-        apiFetch<ListResponse<MenuItemDto>>("/api/favorites?limit=100"),
+      const [orderData, favoriteData, summaryData] = await Promise.all([
+        apiFetch<{ success: boolean; orders: OrderDto[] }>("/api/orders/my?limit=50"),
+        apiFetch<ListResponse<MenuItemDto>>("/api/favorites?limit=50"),
+        apiFetch<DashboardSummaryResponse>("/api/dashboard/summary"),
       ]);
       setOrders(orderData.orders);
       setFavorites(favoriteData.items);
+      setSummary(summaryData.summary);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Could not load your dashboard");
     } finally {
@@ -65,10 +75,6 @@ export function CustomerDashboard() {
   useEffect(() => {
     void Promise.resolve().then(load);
   }, [load]);
-
-  const pendingOrders = orders.filter((order) => order.status === "pending").length;
-  const acceptedOrders = orders.filter((order) => order.status === "accepted").length;
-  const rejectedOrders = orders.filter((order) => order.status === "rejected").length;
 
   return (
     <div className="space-y-8">
@@ -86,7 +92,7 @@ export function CustomerDashboard() {
             onClick={() => setTab(value)}
             className={cn(
               "rounded-lg px-3.5 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground",
-              tab === value && "bg-orange-500/10 text-orange-600 dark:text-orange-400",
+              tab === value && "bg-primary/10 text-primary",
             )}
           >
             {tabLabels[value]}
@@ -94,48 +100,55 @@ export function CustomerDashboard() {
         ))}
       </div>
 
-      {tab === "taste-dna" ? (
-        <TasteDnaPanel favoriteIds={favorites.map((item) => item.id)} onChanged={() => void load()} />
-      ) : loading ? (
-        <div className="flex items-center justify-center py-24 text-muted-foreground">
-          <Loader2 className="mr-2 size-5 animate-spin" /> Loading dashboard...
-        </div>
+      {loading ? (
+        <DashboardOverviewSkeleton />
       ) : error ? (
         <ErrorState message={error} onRetry={() => void load()} />
+      ) : !summary ? (
+        <ErrorState message="Your dashboard summary is unavailable." onRetry={() => void load()} />
+      ) : tab === "taste-dna" ? (
+        <TasteDnaPanel favoriteIds={favorites.map((item) => item.id)} onChanged={() => void load()} />
       ) : tab === "overview" ? (
         <div className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { label: "Total orders", value: orders.length, icon: ClipboardList },
-              { label: "Pending orders", value: pendingOrders, icon: Loader2 },
-              { label: "Accepted orders", value: acceptedOrders, icon: CheckCircle2 },
-              { label: "Rejected orders", value: rejectedOrders, icon: XCircle },
-            ].map(({ label, value, icon: Icon }) => (
-              <Card key={label}>
-                <CardContent className="flex items-center gap-4 py-5">
-                  <div className="flex size-11 items-center justify-center rounded-xl bg-orange-500/10 text-orange-500">
-                    <Icon className="size-5" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">{value}</p>
-                    <p className="text-xs text-muted-foreground">{label}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard
+              label="Total orders"
+              value={summary.stats.totalOrders}
+              icon={ClipboardList}
+            />
+            <StatCard
+              label="Pending orders"
+              value={summary.stats.pendingOrders}
+              icon={Loader2}
+            />
+            <StatCard
+              label="Completed orders"
+              value={summary.stats.completedOrders}
+              icon={CheckCircle2}
+            />
+            <StatCard
+              label="Favorite items"
+              value={summary.stats.favorites ?? favorites.length}
+              icon={Heart}
+            />
           </div>
 
-          <ChartCard
-            title="Order activity"
-            description="A quick breakdown of your orders by status."
-            data={[
-              { label: "Pending", value: pendingOrders },
-              { label: "Accepted", value: acceptedOrders },
-              { label: "Preparing", value: orders.filter((order) => order.status === "preparing").length },
-              { label: "Delivered", value: orders.filter((order) => order.status === "delivered").length },
-              { label: "Rejected", value: rejectedOrders },
-            ]}
-          />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <ChartCard
+              title="Order activity"
+              description="Orders placed over the last 7 days."
+              data={summary.charts.orderTrend}
+              variant="line"
+              emptyMessage="No orders in the last 7 days"
+            />
+            <ChartCard
+              title="Order status"
+              description="All of your orders by current status."
+              data={summary.charts.orderStatus}
+              variant="donut"
+              emptyMessage="No orders yet"
+            />
+          </div>
 
           <div>
             <h2 className="mb-4 text-xl font-semibold">Recent orders</h2>

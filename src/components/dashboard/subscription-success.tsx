@@ -72,9 +72,9 @@ export function SubscriptionSuccess() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <Card className="border-orange-500/30">
+      <Card className="border-primary/30">
         <CardHeader className="text-center">
-          <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-orange-500/10 text-orange-500">
+          <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
             {isPremium ? <Sparkles className="size-7" /> : <CheckCircle2 className="size-7" />}
           </div>
           <CardTitle className="text-2xl">

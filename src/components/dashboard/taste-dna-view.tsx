@@ -47,7 +47,7 @@ export function TasteDnaView() {
     <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-10 sm:px-6 lg:px-8">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0 space-y-1">
-          <p className="text-xs font-semibold tracking-[0.18em] text-orange-500 uppercase">
+          <p className="text-xs font-semibold tracking-[0.18em] text-primary uppercase">
             Just for you
           </p>
           <h1 className="text-2xl font-bold sm:text-3xl">Your Taste DNA</h1>

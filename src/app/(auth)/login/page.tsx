@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,8 +24,21 @@ const loginSchema = z.object({
 
 type LoginValues = z.infer<typeof loginSchema>;
 
+const friendlySignInError = (message?: string | null): string => {
+  const detail = (message ?? "").toLowerCase();
+  if (/block|suspend|disabled/.test(detail)) return "Your account has been blocked.";
+  if (
+    /invalid|incorrect|unauthorized|not found|bad credential|email or password/.test(detail)
+  ) {
+    return "Invalid email or password.";
+  }
+  return "Something went wrong. Please try again.";
+};
+
 export default function LoginPage() {
   const router = useRouter();
+  const submittingRef = useRef(false);
+  const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { data: session, isPending } = authClient.useSession();
@@ -50,6 +63,10 @@ export default function LoginPage() {
   }, [isPending, router, session]);
 
   const onSubmit = async (values: LoginValues) => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setSubmitting(true);
+
     try {
       const { error } = await authClient.signIn.email({
         email: values.email.toLowerCase(),
@@ -57,7 +74,7 @@ export default function LoginPage() {
       });
 
       if (error) {
-        toast.error(error.message ?? "Could not sign in");
+        toast.error(friendlySignInError(error.message), { id: "sign-in-error" });
         return;
       }
 
@@ -65,20 +82,24 @@ export default function LoginPage() {
       // The sign-in response is not used for authorization.
       const session = await authClient.getSession();
       if (session.error || !session.data?.user) {
-        toast.error("We couldn't load your session. Please try again.");
+        toast.error("Something went wrong. Please try again.", { id: "sign-in-error" });
         return;
       }
 
       if (session.data.user.isBlocked === true) {
+        toast.error("Your account has been blocked.", { id: "sign-in-error" });
         router.replace("/blocked");
         return;
       }
 
-      toast.success("Welcome back!");
+      toast.success("Signed in successfully!", { id: "sign-in-success" });
       router.replace(postAuthDestination(session.data.user.role));
       router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not sign in");
+    } catch {
+      toast.error("Something went wrong. Please try again.", { id: "sign-in-error" });
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
     }
   };
 
@@ -108,7 +129,12 @@ export default function LoginPage() {
         </>
       }
     >
-      <form onSubmit={handleSubmit((values) => void onSubmit(values))} className="space-y-5">
+      <form
+        onSubmit={(event) => {
+          void handleSubmit(onSubmit)(event);
+        }}
+        className="space-y-5"
+      >
         <div className="space-y-2">
           <Label htmlFor="email">Email address</Label>
           <Input
@@ -147,9 +173,15 @@ export default function LoginPage() {
           ) : null}
         </div>
 
-        <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
-          {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
-          {isSubmitting ? "Signing in..." : "Sign in"}
+        <Button
+          type="submit"
+          className="w-full"
+          size="lg"
+          disabled={submitting || isSubmitting}
+          aria-busy={submitting || isSubmitting}
+        >
+          {submitting || isSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
+          {submitting || isSubmitting ? "Signing in..." : "Sign in"}
         </Button>
       </form>
 

@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Loader2, MapPin, Phone, Star } from "lucide-react";
+import { ArrowLeft, Crown, Loader2, MapPin, Phone, Star } from "lucide-react";
 
 import { PizzaCard } from "@/components/public/cards";
 import { RestaurantReviews } from "@/components/public/restaurant-reviews";
 import { EmptyState, ErrorState } from "@/components/shared/ui-kit";
+import { Badge } from "@/components/ui/badge";
 import { publicApi } from "@/lib/api";
 import type { ListResponse, MenuItemDto, RestaurantDto } from "@/lib/types";
 
@@ -70,7 +71,14 @@ export function RestaurantDetail() {
 
       <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight">{restaurant.name}</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-4xl font-bold tracking-tight">{restaurant.name}</h1>
+            {restaurant.vendorPremium ? (
+              <Badge className="bg-amber-400 text-amber-950">
+                <Crown className="size-3" /> Premium
+              </Badge>
+            ) : null}
+          </div>
           <p className="max-w-2xl text-muted-foreground">{restaurant.description}</p>
           {!restaurant.isAvailable ? (
             <span className="inline-flex rounded-md bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive">

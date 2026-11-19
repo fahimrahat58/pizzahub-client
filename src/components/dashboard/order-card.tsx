@@ -80,7 +80,7 @@ export function OrderCard({
           <p className="mt-1 text-xs text-muted-foreground">
             {new Date(order.createdAt).toLocaleString()}
           </p>
-          <Link href={detailHref} className="mt-1 inline-block text-xs font-medium text-orange-500 hover:underline">
+          <Link href={detailHref} className="mt-1 inline-block text-xs font-medium text-primary hover:underline">
             View details
           </Link>
         </div>
@@ -99,7 +99,7 @@ export function OrderCard({
             <p className="text-sm text-muted-foreground">
               Qty {order.quantity} × ${order.unitPrice.toFixed(2)}
             </p>
-            <p className="mt-1 font-semibold text-orange-500">
+            <p className="mt-1 font-semibold text-primary">
               ${order.totalPrice.toFixed(2)}
             </p>
           </div>
@@ -145,7 +145,7 @@ export function OrderCard({
               const Icon = statusIcons[entry.status] ?? Clock3;
               return (
                 <li key={`${entry.status}-${index}`} className="flex items-start gap-2.5 text-sm">
-                  <Icon className="mt-0.5 size-4 shrink-0 text-orange-500" />
+                  <Icon className="mt-0.5 size-4 shrink-0 text-primary" />
                   <div>
                     <p className="font-medium capitalize">{entry.note ?? entry.status.replaceAll("_", " ")}</p>
                     <p className="text-xs text-muted-foreground">

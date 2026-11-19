@@ -52,7 +52,7 @@ export function SubscriptionCancel() {
       />
       <Card>
         <CardHeader className="text-center">
-          <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-muted text-orange-500">
+          <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-muted text-primary">
             <ShoppingCart className="size-7" />
           </div>
           <CardTitle className="text-xl">You can try again whenever you like</CardTitle>

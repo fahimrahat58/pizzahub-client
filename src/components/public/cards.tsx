@@ -184,11 +184,18 @@ export function RestaurantCard({ restaurant }: { restaurant: RestaurantDto }) {
         />
       </div>
       <div className="flex flex-1 flex-col space-y-2 p-5">
-        <h3 className="text-lg font-semibold">
-          <Link href={`/restaurants/${restaurant.id}`} className="hover:text-orange-500 hover:underline">
-            {restaurant.name}
-          </Link>
-        </h3>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <h3 className="text-lg font-semibold">
+            <Link href={`/restaurants/${restaurant.id}`} className="hover:text-orange-500 hover:underline">
+              {restaurant.name}
+            </Link>
+          </h3>
+          {restaurant.vendorPremium ? (
+            <Badge className="shrink-0 bg-amber-400 text-amber-950">
+              <Crown className="size-3" /> Premium
+            </Badge>
+          ) : null}
+        </div>
         <p className="line-clamp-2 text-sm text-muted-foreground">{restaurant.description}</p>
         {!restaurant.isAvailable ? (
           <span className="w-fit rounded-md bg-destructive/10 px-2 py-1 text-xs font-semibold text-destructive">
