@@ -48,7 +48,7 @@ export function ProfileImageUpload({
         value={image}
         onChange={(url) => void save(url)}
         label="Profile image"
-        hint="JPG, PNG, WebP or GIF up to 5 MB. Saved automatically after upload."
+        hint="JPG, PNG, WebP or GIF up to 4 MB. Saved automatically after upload."
         aspect="aspect-square"
       />
       {saving ? (

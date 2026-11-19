@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { AuthShell } from "@/components/auth/auth-shell";
+import { GoogleLogo } from "@/components/shared/google-logo";
 import { ImageUpload } from "@/components/shared/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -212,7 +213,7 @@ export default function RegisterPage() {
           onChange={(url) => setValue("image", url, { shouldValidate: true })}
           onUploadingChange={setImageUploading}
           label="Profile Image (optional)"
-          hint="JPG, PNG, WebP or GIF up to 5 MB. You can skip this step."
+          hint="JPG, PNG, WebP or GIF up to 4 MB. You can skip this step."
           aspect="aspect-[3/1]"
         />
 
@@ -312,7 +313,7 @@ export default function RegisterPage() {
         disabled={googleLoading}
         onClick={() => void handleGoogle()}
       >
-        {googleLoading ? <Loader2 className="size-4 animate-spin" /> : null}
+        {googleLoading ? <Loader2 className="size-4 animate-spin" /> : <GoogleLogo />}
         Continue with Google
       </Button>
     </AuthShell>

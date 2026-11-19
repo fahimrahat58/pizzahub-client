@@ -196,7 +196,7 @@ export function ImageUpload({
   onChange,
   onUploadingChange,
   label = "Food photo",
-  hint = "JPG, PNG, WebP or GIF up to 5 MB",
+  hint = "JPG, PNG, WebP or GIF up to 4 MB",
   aspect = "aspect-[4/3]",
 }: {
   value: string;
