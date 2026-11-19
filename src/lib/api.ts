@@ -12,6 +12,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly code?: string,
   ) {
     super(message);
     this.name = "ApiError";
@@ -99,12 +100,16 @@ const parseResponse = async <T>(response: Response): Promise<T> => {
   }
 
   if (!response.ok) {
-    const body = data as { message?: string; error?: { message?: string } } | null;
+    const body = data as {
+      message?: string;
+      code?: string;
+      error?: { message?: string };
+    } | null;
     const message =
       body?.message ??
       body?.error?.message ??
       `Request failed with status ${response.status}`;
-    throw new ApiError(message, response.status);
+    throw new ApiError(message, response.status, body?.code);
   }
 
   return data as T;
@@ -163,7 +168,23 @@ export const apiFetch = async <T>(
     }
   }
 
-  return parseResponse<T>(response);
+  try {
+    return await parseResponse<T>(response);
+  } catch (error) {
+    // An admin can block an account while a protected page is already open.
+    // Every API call then fails with this code; leave the unusable page instead
+    // of showing a UI full of failed actions.
+    if (
+      error instanceof ApiError &&
+      error.status === 403 &&
+      error.code === "ACCOUNT_BLOCKED" &&
+      typeof window !== "undefined"
+    ) {
+      clearApiToken();
+      window.location.assign(new URL("/blocked", window.location.origin).toString());
+    }
+    throw error;
+  }
 };
 
 export const publicApi = <T>(path: string, options: ApiRequestOptions = {}) =>

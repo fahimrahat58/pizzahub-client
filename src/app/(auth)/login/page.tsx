@@ -41,7 +41,11 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isPending && session?.user) {
-      router.replace(postAuthDestination(session.user.role));
+      router.replace(
+        session.user.isBlocked === true
+          ? "/blocked"
+          : postAuthDestination(session.user.role),
+      );
     }
   }, [isPending, router, session]);
 
@@ -62,6 +66,11 @@ export default function LoginPage() {
       const session = await authClient.getSession();
       if (session.error || !session.data?.user) {
         toast.error("We couldn't load your session. Please try again.");
+        return;
+      }
+
+      if (session.data.user.isBlocked === true) {
+        router.replace("/blocked");
         return;
       }
 
