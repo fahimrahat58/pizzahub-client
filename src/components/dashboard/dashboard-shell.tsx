@@ -159,16 +159,15 @@ export function DashboardShell({
               ? `${hashBasePath}#${hash}`
               : (itemHref ?? hashBasePath);
             // Hash tabs only belong to the dashboard root they are configured
-            // for. Route items use exact matching; vendor section links still
-            // allow nested pages such as /dashboard/vendor/orders/[id].
+            // for. Route items match the current pathname exactly; only vendor
+            // section links also match nested pages such as
+            // /dashboard/vendor/orders/[id]. The vendor root is never a prefix.
+            const isVendorSection =
+              itemHref?.startsWith("/dashboard/vendor/") ?? false;
             const active = hash
               ? pathname === hashBasePath && currentHash === `#${hash}`
-              : itemHref
-                ? itemHref.startsWith("/dashboard/vendor")
-                  ? pathname === itemHref ||
-                    pathname.startsWith(`${itemHref}/`)
-                  : pathname === itemHref
-                : false;
+              : pathname === itemHref ||
+                (isVendorSection && pathname.startsWith(`${itemHref}/`));
             return (
               <Link
                 key={label}
