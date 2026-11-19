@@ -21,6 +21,11 @@ export const emitVendorOrderCount = (count: number): void => {
 };
 
 export const markVendorOrdersSeen = async (): Promise<void> => {
-  await apiFetch("/api/orders/vendor/seen", { method: "POST" });
-  emitVendorOrderCount(0);
+  const data = await apiFetch<{ success: boolean; count?: number }>(
+    "/api/orders/vendor/seen",
+    { method: "POST" },
+  );
+  // The server returns the post-update count so an order that arrived while
+  // this request was in flight is not briefly hidden by a hard-coded zero.
+  emitVendorOrderCount(data.count ?? 0);
 };
