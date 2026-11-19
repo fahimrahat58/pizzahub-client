@@ -126,7 +126,7 @@ const roleLinks: Record<UserRole, { href: string; label: string }[]> = {
   admin: [
     { href: "/dashboard/admin#users", label: "Manage Users" },
     { href: "/dashboard/admin#menu", label: "Menu Items" },
-    { href: "/dashboard/transactions", label: "Transactions" },
+    { href: "/dashboard/admin#transactions", label: "Transactions" },
   ],
 };
 
@@ -175,11 +175,15 @@ export function SiteHeader() {
       // a stale authenticated session and redirect away.
       await authClient.getSession();
       clearApiToken();
-      toast.success("Signed out successfully!", { id: "sign-out-success" });
+      toast.success("Logout successful", { id: "sign-out-success" });
       router.replace("/login");
       router.refresh();
     } catch {
       toast.error("Unable to sign out. Please try again.", { id: "sign-out-error" });
+    } finally {
+      // The header stays mounted across route changes, so a success must reset
+      // this too. Otherwise the next sign-in reuses the stuck "Signing out"
+      // state and the Logout item stays disabled and spinning.
       signingOutRef.current = false;
       setSigningOut(false);
     }

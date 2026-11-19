@@ -73,8 +73,8 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { hash: "overview", label: "Overview", icon: PieChart },
     { hash: "menu", label: "Menu moderation", icon: BadgeCheck },
     { hash: "users", label: "Users", icon: UsersRound },
-    { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
-    { href: "/dashboard/transactions", label: "Transactions", icon: Receipt },
+    { hash: "billing", label: "Billing", icon: CreditCard },
+    { hash: "transactions", label: "Transactions", icon: Receipt },
     { hash: "orders", label: "Orders", icon: ClipboardList },
     { hash: "reviews", label: "Reviews", icon: Star },
     { hash: "profile", label: "Profile", icon: Settings },
@@ -115,8 +115,13 @@ function SidebarContent({
         {navByRole[role].map(({ hash, href: itemHref, label, icon: Icon }) => {
           const href = hash ? `${hashBasePath}#${hash}` : (itemHref ?? hashBasePath);
           const isVendorSection = itemHref?.startsWith("/dashboard/vendor/") ?? false;
+          const isAdminOrderDetail =
+            role === "admin" &&
+            hash === "orders" &&
+            pathname.startsWith(`${hashBasePath}/orders/`);
           const active = hash
-            ? pathname === hashBasePath && currentHash === `#${hash}`
+            ? (pathname === hashBasePath && currentHash === `#${hash}`) ||
+              isAdminOrderDetail
             : pathname === itemHref ||
               (isVendorSection && pathname.startsWith(`${itemHref}/`));
           const showOrderBadge =
@@ -247,11 +252,12 @@ export function DashboardShell({
       // a stale authenticated session and redirect away.
       await authClient.getSession();
       clearApiToken();
-      toast.success("Signed out successfully!", { id: "sign-out-success" });
+      toast.success("Logout successful", { id: "sign-out-success" });
       router.replace("/login");
       router.refresh();
     } catch {
       toast.error("Unable to sign out. Please try again.", { id: "sign-out-error" });
+    } finally {
       signingOutRef.current = false;
       setSigningOut(false);
     }

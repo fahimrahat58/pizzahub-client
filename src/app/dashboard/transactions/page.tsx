@@ -1,14 +1,5 @@
-import { Suspense } from "react";
-
-import { AuthGate } from "@/components/auth/auth-gate";
-import { AdminDashboard } from "@/components/dashboard/admin-dashboard";
+import { redirect } from "next/navigation";
 
 export default function TransactionsPage() {
-  return (
-    <Suspense fallback={<div className="py-20 text-center text-sm text-muted-foreground">Loading...</div>}>
-      <AuthGate roles={["admin"]}>
-        <AdminDashboard initialTab="transactions" />
-      </AuthGate>
-    </Suspense>
-  );
+  redirect("/dashboard/admin#transactions");
 }

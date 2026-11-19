@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   ClipboardList,
   CreditCard,
@@ -80,11 +79,6 @@ const tabLabels: Record<Tab, string> = {
   profile: "Profile",
 };
 
-const ROUTE_TABS: Partial<Record<Tab, string>> = {
-  billing: "/dashboard/billing",
-  transactions: "/dashboard/transactions",
-};
-
 type MenuDecision = {
   item: MenuItemDto;
   action: "hide" | "restore";
@@ -103,26 +97,9 @@ const formatDate = (value: string) =>
 
 const formatOptionalDate = (value: string | null) => (value ? formatDate(value) : "—");
 
-export function AdminDashboard({ initialTab = "overview" }: { initialTab?: Tab }) {
-  const router = useRouter();
-  const routeDrivenTab = initialTab === "billing" || initialTab === "transactions";
-  const [tab, setTab] = useHashTab<Tab>(initialTab, TABS, {
-    syncHash: !routeDrivenTab,
-  });
+export function AdminDashboard() {
+  const [tab, setTab] = useHashTab<Tab>("overview", TABS);
   const { data: session } = authClient.useSession();
-
-  const openTab = (value: Tab) => {
-    const route = ROUTE_TABS[value];
-    if (route) {
-      router.push(route);
-      return;
-    }
-    if (routeDrivenTab) {
-      router.push(`/dashboard/admin#${value}`);
-      return;
-    }
-    setTab(value);
-  };
 
   const [summary, setSummary] = useState<AdminStatsPayload | null>(null);
   const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary | null>(null);
@@ -423,7 +400,7 @@ export function AdminDashboard({ initialTab = "overview" }: { initialTab?: Tab }
           <button
             key={value}
             type="button"
-            onClick={() => openTab(value)}
+            onClick={() => setTab(value)}
             className={cn(
               "rounded-lg px-3.5 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground",
               tab === value && "bg-primary/10 text-primary",
