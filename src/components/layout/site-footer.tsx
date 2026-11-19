@@ -6,6 +6,7 @@ import { Mail, MapPin, Phone } from "lucide-react";
 import { CurrentYear } from "@/components/layout/current-year";
 import { Brand } from "@/components/shared/ui-kit";
 import { authClient } from "@/lib/auth-client";
+import { supportContact } from "@/lib/contact";
 import { emitDashboardHash } from "@/lib/dashboard-hash";
 import { dashboardForRole } from "@/lib/roles";
 import type { UserRole } from "@/lib/types";
@@ -100,14 +101,14 @@ export function SiteFooter() {
         <div>
           <h3 className="mb-3 text-sm font-semibold">Contact</h3>
           <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-            <a href="mailto:hello@pizzahub.example" className="flex items-center gap-2 hover:text-foreground">
-              <Mail className="size-4 shrink-0" /> hello@pizzahub.example
+            <a href={supportContact.emailHref} className="flex items-center gap-2 hover:text-foreground">
+              <Mail className="size-4 shrink-0" /> {supportContact.email}
             </a>
-            <a href="tel:+15550123456" className="flex items-center gap-2 hover:text-foreground">
-              <Phone className="size-4 shrink-0" /> +1 (555) 012-3456
+            <a href={supportContact.phoneHref} className="flex items-center gap-2 hover:text-foreground">
+              <Phone className="size-4 shrink-0" /> {supportContact.phone}
             </a>
             <p className="flex items-start gap-2">
-              <MapPin className="mt-0.5 size-4 shrink-0" /> 24 Pizza Lane, Food District
+              <MapPin className="mt-0.5 size-4 shrink-0" /> {supportContact.address}
             </p>
             <div className="flex items-center gap-3 pt-2">
               <a

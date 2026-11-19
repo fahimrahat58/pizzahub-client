@@ -73,7 +73,7 @@ export function AuthShell({
           </div>
           <p className="mt-5 text-center text-xs text-muted-foreground">
             By continuing you agree to our{" "}
-            <Link href="/" className="underline underline-offset-2">
+            <Link href="/terms-of-use" className="underline underline-offset-2">
               terms of use
             </Link>
             .

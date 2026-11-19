@@ -14,10 +14,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import {
-  ErrorState,
-  PageHeader,
-} from "@/components/shared/ui-kit";
+import { ErrorState, PageHeader } from "@/components/shared/ui-kit";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -84,7 +81,8 @@ const formatDate = (value: string | null) => {
 
 export function VendorSubscriptionPanel() {
   const router = useRouter();
-  const [subscription, setSubscription] = useState<SubscriptionStatusDto | null>(null);
+  const [subscription, setSubscription] =
+    useState<SubscriptionStatusDto | null>(null);
   const [plans, setPlans] = useState<PlanPrice[]>([]);
   const [configured, setConfigured] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -117,7 +115,9 @@ export function VendorSubscriptionPanel() {
       setConfigured(plansResult.configured);
     } catch (loadError) {
       setError(
-        loadError instanceof Error ? loadError.message : "Could not load billing details",
+        loadError instanceof Error
+          ? loadError.message
+          : "Could not load billing details",
       );
     } finally {
       setLoading(false);
@@ -186,7 +186,9 @@ export function VendorSubscriptionPanel() {
       // and must never be cached or reused after returning from Stripe.
       const result = await createPortalSession();
       if (!result.url) {
-        throw new Error("Stripe did not return a billing portal URL. Please try again.");
+        throw new Error(
+          "Stripe did not return a billing portal URL. Please try again.",
+        );
       }
       window.location.assign(result.url);
     } catch (portalError) {
@@ -226,7 +228,12 @@ export function VendorSubscriptionPanel() {
   }
 
   if (error || !subscription) {
-    return <ErrorState message={error || "Could not load billing details"} onRetry={() => void load()} />;
+    return (
+      <ErrorState
+        message={error || "Could not load billing details"}
+        onRetry={() => void load()}
+      />
+    );
   }
 
   const monthly = plans.find((plan) => plan.id === "monthly");
@@ -273,12 +280,16 @@ export function VendorSubscriptionPanel() {
       />
 
       <Card className="overflow-hidden border-orange-500/20 bg-gradient-to-br from-orange-500/5 to-transparent">
-        <CardContent className="flex flex-wrap items-center justify-between gap-4 py-5">
-          <div className="space-y-1.5">
+        <CardContent className="flex flex-col gap-4 py-5 md:flex-row md:items-center md:justify-between">
+          <div className="min-w-0 space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-semibold">Your current plan</h2>
-              <Badge variant="secondary">{statusLabels[subscription.status] ?? subscription.status}</Badge>
-              {subscription.canceledAt ? <Badge variant="destructive">Canceled</Badge> : null}
+              <Badge variant="secondary">
+                {statusLabels[subscription.status] ?? subscription.status}
+              </Badge>
+              {subscription.canceledAt ? (
+                <Badge variant="destructive">Canceled</Badge>
+              ) : null}
             </div>
             <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <CalendarClock className="size-4" />
@@ -304,21 +315,23 @@ export function VendorSubscriptionPanel() {
             ) : null}
             {subscription.currentPeriodStart ? (
               <p className="text-xs text-muted-foreground">
-                Current period started {formatDate(subscription.currentPeriodStart)}
+                Current period started{" "}
+                {formatDate(subscription.currentPeriodStart)}
                 {subscription.canceledAt
                   ? ` · Canceled ${formatDate(subscription.canceledAt)}`
                   : ""}
               </p>
             ) : null}
             {subscription.stripeSubscriptionId ? (
-              <p className="font-mono text-xs text-muted-foreground">
+              <p className="break-all font-mono text-xs text-muted-foreground">
                 Subscription {subscription.stripeSubscriptionId}
               </p>
             ) : null}
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <Button
               variant="outline"
+              className="min-h-11 w-full sm:w-auto"
               disabled={busy}
               onClick={() => void refresh()}
             >
@@ -330,7 +343,12 @@ export function VendorSubscriptionPanel() {
               Check status
             </Button>
             {subscription.hasBillingAccount ? (
-              <Button variant="outline" disabled={busy} onClick={() => void openPortal()}>
+              <Button
+                variant="outline"
+                className="min-h-11 w-full sm:w-auto"
+                disabled={busy}
+                onClick={() => void openPortal()}
+              >
                 {action === "portal" ? (
                   <Loader2 className="size-4 animate-spin" />
                 ) : (
@@ -345,17 +363,20 @@ export function VendorSubscriptionPanel() {
 
       {!configured ? (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-700 dark:text-amber-300">
-          Checkout is temporarily unavailable because Stripe pricing is not configured on the server. You can still review the plans below.
+          Checkout is temporarily unavailable because Stripe pricing is not
+          configured on the server. You can still review the plans below.
         </div>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="flex flex-col">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
+        <Card className="flex min-w-0 flex-col">
+          <CardHeader className="min-w-0 gap-3 sm:gap-4">
+            <CardTitle className="flex min-w-0 flex-wrap items-center justify-between gap-2">
               Free
               {!subscription.isPremium ? (
-                <Badge variant="outline">Current plan</Badge>
+                <Badge variant="outline" className="shrink-0">
+                  Current plan
+                </Badge>
               ) : null}
             </CardTitle>
           </CardHeader>
@@ -364,15 +385,20 @@ export function VendorSubscriptionPanel() {
               <p className="text-3xl font-bold">$0</p>
               <p className="text-sm text-muted-foreground">Free forever</p>
             </div>
-            <ul className="space-y-3 text-sm">
+            <ul className="space-y-3 text-sm leading-relaxed">
               {freeFeatures.map((feature) => (
                 <li key={feature} className="flex items-start gap-2">
                   <Check className="mt-0.5 size-4 shrink-0 text-emerald-500" />
-                  {feature}
+                  <span className="min-w-0">{feature}</span>
                 </li>
               ))}
             </ul>
-            <Button variant="outline" className="mt-auto" disabled>
+            <Button
+              variant="outline"
+              className="mt-auto min-h-11 w-full sm:w-auto"
+              size="lg"
+              disabled
+            >
               Included
             </Button>
           </CardContent>
@@ -385,29 +411,34 @@ export function VendorSubscriptionPanel() {
             <Card
               key={card.id}
               className={cn(
-                "flex flex-col border-orange-500/40 shadow-lg shadow-orange-500/5",
+                "flex min-w-0 flex-col border-orange-500/40 shadow-lg shadow-orange-500/5",
                 isCurrentPlan && "ring-2 ring-orange-500/60",
               )}
             >
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-2">
-                    <Sparkles className="size-5 text-orange-500" /> {card.name}
+              <CardHeader className="min-w-0 gap-3 sm:gap-4">
+                <CardTitle className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <Sparkles className="size-5 shrink-0 text-orange-500" />
+                    <span className="min-w-0 break-words text-sm sm:text-base">
+                      {card.name}
+                    </span>
                   </span>
                   {isCurrentPlan ? (
-                    <Badge>Current plan</Badge>
+                    <Badge className="shrink-0">Current plan</Badge>
                   ) : card.id === "yearly" ? (
-                    <Badge variant="secondary">Most popular</Badge>
+                    <Badge variant="secondary" className="shrink-0">
+                      Most popular
+                    </Badge>
                   ) : null}
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col gap-6">
                 <div>
-                  <p className="text-3xl font-bold">
+                  <p className="flex flex-wrap items-baseline gap-x-1 text-2xl font-bold sm:text-3xl">
                     {formatPrice(card.price, "See price at checkout")}
                     {card.price?.amount !== null && card.price ? (
-                      <span className="text-sm font-normal text-muted-foreground">
-                        {" "}{card.suffix}
+                      <span className="text-xs font-normal text-muted-foreground sm:text-sm">
+                        {card.suffix}
                       </span>
                     ) : null}
                   </p>
@@ -415,21 +446,28 @@ export function VendorSubscriptionPanel() {
                     Billed {card.billed} via Stripe
                   </p>
                 </div>
-                <ul className="space-y-3 text-sm">
+                <ul className="space-y-3 text-sm leading-relaxed">
                   {premiumFeatures.map((feature) => (
                     <li key={feature} className="flex items-start gap-2">
                       <Check className="mt-0.5 size-4 shrink-0 text-emerald-500" />
-                      {feature}
+                      <span className="min-w-0">{feature}</span>
                     </li>
                   ))}
                 </ul>
                 {subscription.isPremium ? (
-                  <Button className="mt-auto" variant="outline" disabled={busy} onClick={() => void openPortal()}>
+                  <Button
+                    className="mt-auto min-h-11 w-full sm:w-auto"
+                    size="lg"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => void openPortal()}
+                  >
                     Manage your subscription <ArrowRight className="size-4" />
                   </Button>
                 ) : (
                   <Button
-                    className="mt-auto"
+                    className="mt-auto min-h-11 w-full sm:w-auto"
+                    size="lg"
                     disabled={!canSubscribe}
                     onClick={() => void subscribe(card.id)}
                   >
@@ -469,10 +507,15 @@ export function VendorSubscriptionPanel() {
                   ["Premium vendor badge", "No", "Yes"],
                   ["Featured menu placement", "No", "Yes"],
                 ].map(([label, free, premium]) => (
-                  <tr key={label} className="border-b border-border/60 last:border-0">
+                  <tr
+                    key={label}
+                    className="border-b border-border/60 last:border-0"
+                  >
                     <td className="py-3 pr-4">{label}</td>
                     <td className="py-3 pr-4 text-muted-foreground">{free}</td>
-                    <td className="py-3 font-medium text-orange-600 dark:text-orange-400">{premium}</td>
+                    <td className="py-3 font-medium text-orange-600 dark:text-orange-400">
+                      {premium}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -485,7 +528,7 @@ export function VendorSubscriptionPanel() {
         Payments are processed by Stripe. PizzaHub never stores card details.
         Need help?{" "}
         <Link
-          href="/dashboard/vendor/profile"
+          href="/contact-support"
           className="text-orange-500 hover:underline"
         >
           Contact support
