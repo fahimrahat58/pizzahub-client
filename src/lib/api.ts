@@ -82,6 +82,8 @@ export const clearApiToken = (): void => {
 
 export type ApiRequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
+  /** Pre-encoded body (e.g. raw image bytes) sent without JSON encoding. */
+  rawBody?: BodyInit;
   auth?: boolean;
 };
 
@@ -113,19 +115,26 @@ export const apiFetch = async <T>(
   path: string,
   options: ApiRequestOptions = {},
 ): Promise<T> => {
-  const { auth = true, body, headers, ...rest } = options;
+  const { auth = true, body, rawBody, headers, ...rest } = options;
   const url = `${apiBase}${path.startsWith("/") ? path : `/${path}`}`;
 
   const buildInit = async (token?: string): Promise<RequestInit> => {
     const requestHeaders = new Headers(headers);
-    if (body !== undefined) requestHeaders.set("Content-Type", "application/json");
+    if (rawBody === undefined && body !== undefined) {
+      requestHeaders.set("Content-Type", "application/json");
+    }
     if (token) requestHeaders.set("Authorization", `Bearer ${token}`);
 
     return {
       cache: "no-store",
       ...rest,
       headers: requestHeaders,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body:
+        rawBody !== undefined
+          ? rawBody
+          : body === undefined
+            ? undefined
+            : JSON.stringify(body),
       credentials: "include",
     };
   };
@@ -160,13 +169,12 @@ export const apiFetch = async <T>(
 export const publicApi = <T>(path: string, options: ApiRequestOptions = {}) =>
   apiFetch<T>(path, { ...options, auth: false });
 
-const readFileAsDataUrl = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("Could not read the selected file."));
-    reader.readAsDataURL(file);
-  });
+/**
+ * Vercel rejects request bodies over 4.5 MB before Express runs, and those
+ * platform 413 responses have no CORS headers. Raw bytes avoid base64's ~33%
+ * overhead, and this guard stops larger files before the misleading CORS error.
+ */
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 
 const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
@@ -183,16 +191,16 @@ export const uploadImage = async (file: File): Promise<string> => {
   if (file.size === 0) {
     throw new Error("The selected file is empty. Choose another image.");
   }
-  if (file.size > 5 * 1024 * 1024) {
-    throw new Error("Images must be 5 MB or smaller.");
+  if (file.size > MAX_UPLOAD_BYTES) {
+    throw new Error("Images must be 4 MB or smaller.");
   }
 
-  const dataUrl = await readFileAsDataUrl(file);
   const result = await publicApi<{ success: boolean; url: string }>(
     "/api/uploads/image",
     {
       method: "POST",
-      body: { dataUrl, mime: file.type },
+      headers: { "Content-Type": file.type },
+      rawBody: await file.arrayBuffer(),
     },
   );
   return result.url;
