@@ -25,12 +25,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { clearApiToken } from "@/lib/api";
 import { emitDashboardHash } from "@/lib/dashboard-hash";
 import { dashboardForRole, normalizeRole } from "@/lib/roles";
 import type { UserRole } from "@/lib/types";
+import { useVendorOrderCount } from "@/lib/vendor-order-notifications";
 import { cn } from "@/lib/utils";
 
 const publicLinks = [
@@ -54,7 +56,7 @@ function isActiveLink(href: string, pathname: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-type HeaderLink = { href: string; label: string };
+type HeaderLink = { href: string; label: string; badgeCount?: number };
 
 type NavLinkItemsProps = {
   links: HeaderLink[];
@@ -82,6 +84,14 @@ function NavLinkItems({
             onClick={() => onNavigate(link.href)}
           >
             {link.label}
+            {link.badgeCount && link.badgeCount > 0 ? (
+              <Badge
+                className="ml-1.5 bg-orange-500 text-white"
+                aria-label={`${link.badgeCount} unseen orders`}
+              >
+                {link.badgeCount}
+              </Badge>
+            ) : null}
           </Link>
         );
       })}
@@ -129,6 +139,8 @@ export function SiteHeader() {
   const { data: session, isPending: sessionPending } = authClient.useSession();
   const role = session?.user ? normalizeRole(session.user.role) : undefined;
   const dashboard = dashboardForRole(role);
+  // Same shared store as the dashboard sidebar; this hook does not add a poller.
+  const vendorUnseenOrders = useVendorOrderCount(role === "vendor");
 
   // Navbar visibility is only a hint, not authorization: the page guard and
   // the Express API both re-check the live session and role. Waiting for
@@ -139,11 +151,15 @@ export function SiteHeader() {
     session?.user?.role === "customer" &&
     session.user.isBlocked !== true;
 
-  const allLinks = [
+  const allLinks: HeaderLink[] = [
     ...publicLinks,
     ...(role ? roleLinks[role] : []),
     ...(showTasteDnaLink ? [tasteDnaLink] : []),
-  ];
+  ].map((link) =>
+    role === "vendor" && link.href === "/dashboard/vendor/orders"
+      ? { ...link, badgeCount: vendorUnseenOrders }
+      : link,
+  );
 
   const handleSignOut = async () => {
     setSigningOut(true);
