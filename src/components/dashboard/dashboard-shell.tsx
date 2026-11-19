@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -35,6 +35,10 @@ import {
 } from "@/lib/dashboard-hash";
 import { normalizeRole } from "@/lib/roles";
 import type { UserRole } from "@/lib/types";
+import {
+  fetchVendorUnseenCount,
+  VENDOR_ORDER_COUNT_EVENT,
+} from "@/lib/vendor-order-notifications";
 import { cn } from "@/lib/utils";
 import { Brand } from "@/components/shared/ui-kit";
 
@@ -91,6 +95,8 @@ export function DashboardShell({
   // initial markup. This also keeps the active item correct after sidebar
   // navigation without relying on a render-time `window` check.
   const [currentHash, setCurrentHash] = useState("#overview");
+  const [unseenOrders, setUnseenOrders] = useState(0);
+  const countRevision = useRef(0);
   // The session can contain a legacy or empty role. Fall back to the customer
   // navigation so an otherwise valid session cannot crash server rendering.
   const safeRole = normalizeRole(role);
@@ -113,6 +119,48 @@ export function DashboardShell({
       window.removeEventListener(DASHBOARD_HASH_EVENT, syncEvent);
     };
   }, [pathname]);
+
+  // Poll for new vendor orders and react immediately when the Orders page
+  // marks them seen. The server owns the count, so a reload keeps it intact.
+  useEffect(() => {
+    if (safeRole !== "vendor") {
+      setUnseenOrders(0);
+      return;
+    }
+    let active = true;
+    const refresh = () => {
+      const revision = countRevision.current;
+      fetchVendorUnseenCount()
+        .then((count) => {
+          // Ignore a response started before the Orders route marked orders seen.
+          if (active && revision === countRevision.current) setUnseenOrders(count);
+        })
+        .catch(() => {
+          // Keep the last known count when the API is temporarily unavailable.
+        });
+    };
+    const onCount = (event: Event) => {
+      if (active) {
+        countRevision.current += 1;
+        setUnseenOrders((event as CustomEvent<{ count: number }>).detail.count);
+      }
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 20000);
+    window.addEventListener("focus", refresh);
+    window.addEventListener(VENDOR_ORDER_COUNT_EVENT, onCount);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener(VENDOR_ORDER_COUNT_EVENT, onCount);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [safeRole]);
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -168,6 +216,10 @@ export function DashboardShell({
               ? pathname === hashBasePath && currentHash === `#${hash}`
               : pathname === itemHref ||
                 (isVendorSection && pathname.startsWith(`${itemHref}/`));
+            const showOrderBadge =
+              safeRole === "vendor" &&
+              itemHref === "/dashboard/vendor/orders" &&
+              unseenOrders > 0;
             return (
               <Link
                 key={label}
@@ -182,6 +234,14 @@ export function DashboardShell({
                 )}
               >
                 <Icon className="size-4" /> {label}
+                {showOrderBadge ? (
+                  <Badge
+                    className="ml-auto bg-orange-500 text-white"
+                    aria-label={`${unseenOrders} unseen orders`}
+                  >
+                    {unseenOrders}
+                  </Badge>
+                ) : null}
               </Link>
             );
           })}

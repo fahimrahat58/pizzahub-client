@@ -12,6 +12,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { apiFetch } from "@/lib/api";
 import type { OrderDto, OrderStatus } from "@/lib/types";
+import { markVendorOrdersSeen } from "@/lib/vendor-order-notifications";
 
 const FILTERS = [
   { value: "all", label: "All orders" },
@@ -51,6 +52,11 @@ export function VendorOrdersPage() {
   useEffect(() => {
     void Promise.resolve().then(load);
   }, [load]);
+
+  // Visiting this route clears the new-order badge for this vendor.
+  useEffect(() => {
+    void markVendorOrdersSeen().catch(() => undefined);
+  }, []);
 
   const pending = orders.filter((order) => order.status === "pending").length;
   const active = orders.filter((order) =>
