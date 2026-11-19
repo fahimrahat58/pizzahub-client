@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ChevronDown,
   LayoutDashboard,
@@ -39,11 +39,72 @@ const publicLinks = [
   { href: "/restaurants", label: "Restaurants" },
 ];
 
-// Active-link styling used to depend on usePathname(). That URL hook requires a
-// Suspense boundary on dynamic routes under Cache Components; the public shell
-// is hidden on dashboards with CSS instead, so the header has no runtime URL read.
 const navLinkClass =
   "rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground";
+const mobileNavLinkClass =
+  "rounded-md px-3 py-2.5 text-sm font-medium hover:bg-muted";
+const activeNavLinkClass = "bg-muted text-foreground";
+
+// Only these four public links take part in pathname-based highlighting.
+const activeLinkHrefs = new Set(["/", "/menu", "/restaurants", "/taste-dna"]);
+
+function isActiveLink(href: string, pathname: string) {
+  if (!activeLinkHrefs.has(href)) return false;
+  if (href === "/") return pathname === "/";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+type HeaderLink = { href: string; label: string };
+
+type NavLinkItemsProps = {
+  links: HeaderLink[];
+  pathname?: string;
+  baseClassName: string;
+  onNavigate: (href: string) => void;
+};
+
+function NavLinkItems({
+  links,
+  pathname,
+  baseClassName,
+  onNavigate,
+}: NavLinkItemsProps) {
+  return (
+    <>
+      {links.map((link) => {
+        const active = pathname ? isActiveLink(link.href, pathname) : false;
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            aria-current={active ? "page" : undefined}
+            className={cn(baseClassName, active && activeNavLinkClass)}
+            onClick={() => onNavigate(link.href)}
+          >
+            {link.label}
+          </Link>
+        );
+      })}
+    </>
+  );
+}
+
+// Kept separate so usePathname only suspends this small list, not the whole header.
+function ActiveNavLinkItems({
+  links,
+  baseClassName,
+  onNavigate,
+}: Omit<NavLinkItemsProps, "pathname">) {
+  const pathname = usePathname();
+  return (
+    <NavLinkItems
+      links={links}
+      pathname={pathname}
+      baseClassName={baseClassName}
+      onNavigate={onNavigate}
+    />
+  );
+}
 
 const roleLinks: Record<UserRole, { href: string; label: string }[]> = {
   customer: [{ href: "/dashboard/customer#orders", label: "My Orders" }],
@@ -110,16 +171,21 @@ export function SiteHeader() {
         <Brand className="text-xl sm:text-2xl" />
 
         <nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation">
-          {allLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={navLinkClass}
-              onClick={() => followLink(link.href)}
-            >
-              {link.label}
-            </Link>
-          ))}
+          <Suspense
+            fallback={
+              <NavLinkItems
+                links={allLinks}
+                baseClassName={navLinkClass}
+                onNavigate={followLink}
+              />
+            }
+          >
+            <ActiveNavLinkItems
+              links={allLinks}
+              baseClassName={navLinkClass}
+              onNavigate={followLink}
+            />
+          </Suspense>
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
@@ -207,16 +273,21 @@ export function SiteHeader() {
       {open ? (
         <div className="border-t border-border bg-background px-4 py-4 md:hidden">
           <nav className="flex flex-col gap-1" aria-label="Mobile navigation">
-            {allLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => followLink(link.href)}
-                className="rounded-md px-3 py-2.5 text-sm font-medium hover:bg-muted"
-              >
-                {link.label}
-              </Link>
-            ))}
+            <Suspense
+              fallback={
+                <NavLinkItems
+                  links={allLinks}
+                  baseClassName={mobileNavLinkClass}
+                  onNavigate={followLink}
+                />
+              }
+            >
+              <ActiveNavLinkItems
+                links={allLinks}
+                baseClassName={mobileNavLinkClass}
+                onNavigate={followLink}
+              />
+            </Suspense>
             {session?.user ? (
               <>
                 <div className="mt-2 flex items-center gap-2 rounded-md border border-border/70 px-3 py-2.5">

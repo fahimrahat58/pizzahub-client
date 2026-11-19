@@ -15,6 +15,14 @@ import { ApprovalBadge, ErrorState, LinkButton, PageHeader } from "@/components/
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -46,6 +54,7 @@ export function MenuDetail() {
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [orderDialogOpen, setOrderDialogOpen] = useState(false);
 
   const orderForm = useForm<z.infer<typeof orderSchema>>({
     resolver: zodResolver(orderSchema),
@@ -136,6 +145,7 @@ export function MenuDetail() {
           message: values.message ?? "",
         },
       });
+      setOrderDialogOpen(false);
       toast.success("Order placed! Track it in your dashboard.");
       router.push("/dashboard/customer");
     } catch (orderError) {
@@ -284,65 +294,92 @@ export function MenuDetail() {
               <CardContent>
                 {session?.user ? (
                   session.user.role === "customer" ? (
-                    <form
-                      onSubmit={orderForm.handleSubmit((values) => void placeOrder(values))}
-                      className="space-y-4"
-                    >
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="space-y-2">
-                          <Label htmlFor="quantity">Quantity</Label>
-                          <Input
-                            id="quantity"
-                            type="number"
-                            min={1}
-                            max={20}
-                            {...orderForm.register("quantity", { valueAsNumber: true })}
-                          />
-                          {orderForm.formState.errors.quantity ? (
-                            <p className="text-xs text-destructive">
-                              {orderForm.formState.errors.quantity.message}
-                            </p>
-                          ) : null}
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="deliveryDate">Delivery date</Label>
-                          <Input id="deliveryDate" type="date" {...orderForm.register("deliveryDate")} />
-                          {orderForm.formState.errors.deliveryDate ? (
-                            <p className="text-xs text-destructive">
-                              {orderForm.formState.errors.deliveryDate.message}
-                            </p>
-                          ) : null}
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="deliveryAddress">Delivery address</Label>
-                        <Textarea
-                          id="deliveryAddress"
-                          placeholder="Street, city, and any delivery notes"
-                          {...orderForm.register("deliveryAddress")}
-                        />
-                        {orderForm.formState.errors.deliveryAddress ? (
-                          <p className="text-xs text-destructive">
-                            {orderForm.formState.errors.deliveryAddress.message}
-                          </p>
-                        ) : null}
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="message">Message for the kitchen (optional)</Label>
-                        <Input id="message" placeholder="Extra sauce please!" {...orderForm.register("message")} />
-                      </div>
+                    <>
                       <Button
-                        type="submit"
+                        type="button"
                         className="w-full"
                         size="lg"
-                        disabled={orderForm.formState.isSubmitting}
+                        onClick={() => setOrderDialogOpen(true)}
                       >
-                        {orderForm.formState.isSubmitting ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : null}
-                        Place order · ${(item.price * orderForm.watch("quantity")).toFixed(2)}
+                        Order Now
                       </Button>
-                    </form>
+                      <Dialog open={orderDialogOpen} onOpenChange={setOrderDialogOpen}>
+                        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+                          <DialogHeader>
+                            <DialogTitle>Order this pizza</DialogTitle>
+                            <DialogDescription>
+                              Enter your delivery details to place your order.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <form
+                            onSubmit={orderForm.handleSubmit((values) => void placeOrder(values))}
+                            className="space-y-4"
+                          >
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              <div className="space-y-2">
+                                <Label htmlFor="quantity">Quantity</Label>
+                                <Input
+                                  id="quantity"
+                                  type="number"
+                                  min={1}
+                                  max={20}
+                                  {...orderForm.register("quantity", { valueAsNumber: true })}
+                                />
+                                {orderForm.formState.errors.quantity ? (
+                                  <p className="text-xs text-destructive">
+                                    {orderForm.formState.errors.quantity.message}
+                                  </p>
+                                ) : null}
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="deliveryDate">Delivery date</Label>
+                                <Input id="deliveryDate" type="date" {...orderForm.register("deliveryDate")} />
+                                {orderForm.formState.errors.deliveryDate ? (
+                                  <p className="text-xs text-destructive">
+                                    {orderForm.formState.errors.deliveryDate.message}
+                                  </p>
+                                ) : null}
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="deliveryAddress">Delivery address</Label>
+                              <Textarea
+                                id="deliveryAddress"
+                                placeholder="Street, city, and any delivery notes"
+                                {...orderForm.register("deliveryAddress")}
+                              />
+                              {orderForm.formState.errors.deliveryAddress ? (
+                                <p className="text-xs text-destructive">
+                                  {orderForm.formState.errors.deliveryAddress.message}
+                                </p>
+                              ) : null}
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="message">Message for the kitchen (optional)</Label>
+                              <Input id="message" placeholder="Extra sauce please!" {...orderForm.register("message")} />
+                            </div>
+                            <DialogFooter>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setOrderDialogOpen(false)}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                type="submit"
+                                disabled={orderForm.formState.isSubmitting}
+                              >
+                                {orderForm.formState.isSubmitting ? (
+                                  <Loader2 className="size-4 animate-spin" />
+                                ) : null}
+                                Order · ${(item.price * orderForm.watch("quantity")).toFixed(2)}
+                              </Button>
+                            </DialogFooter>
+                          </form>
+                        </DialogContent>
+                      </Dialog>
+                    </>
                   ) : (
                     <p className="text-sm text-muted-foreground">
                       {session.user.role === "vendor"
