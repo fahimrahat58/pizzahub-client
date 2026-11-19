@@ -190,6 +190,11 @@ export function RestaurantCard({ restaurant }: { restaurant: RestaurantDto }) {
           </Link>
         </h3>
         <p className="line-clamp-2 text-sm text-muted-foreground">{restaurant.description}</p>
+        {!restaurant.isAvailable ? (
+          <span className="w-fit rounded-md bg-destructive/10 px-2 py-1 text-xs font-semibold text-destructive">
+            Temporarily unavailable
+          </span>
+        ) : null}
         <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <MapPin className="size-3.5" /> {restaurant.address}

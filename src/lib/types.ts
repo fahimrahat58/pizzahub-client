@@ -112,6 +112,7 @@ export interface RestaurantSummaryDto {
   address: string;
   image: string | null;
   openingHours: string | null;
+  isAvailable: boolean;
 }
 
 export interface MenuItemDto {
@@ -151,6 +152,7 @@ export interface RestaurantDto {
   address: string;
   phone: string;
   openingHours: string | null;
+  isAvailable: boolean;
   ratingAvg: number;
   reviewCount: number;
   createdAt: string;

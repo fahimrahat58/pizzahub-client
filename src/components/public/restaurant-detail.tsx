@@ -72,6 +72,11 @@ export function RestaurantDetail() {
         <div className="space-y-2">
           <h1 className="text-4xl font-bold tracking-tight">{restaurant.name}</h1>
           <p className="max-w-2xl text-muted-foreground">{restaurant.description}</p>
+          {!restaurant.isAvailable ? (
+            <span className="inline-flex rounded-md bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive">
+              Temporarily unavailable
+            </span>
+          ) : null}
           <div className="flex flex-wrap gap-x-5 gap-y-1 pt-1 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5"><MapPin className="size-4" /> {restaurant.address}</span>
             <span className="flex items-center gap-1.5"><Phone className="size-4" /> {restaurant.phone}</span>

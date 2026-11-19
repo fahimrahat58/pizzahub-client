@@ -89,6 +89,7 @@ export function MenuDetail() {
               address: data.restaurant.address,
               image: data.restaurant.image,
               openingHours: data.restaurant.openingHours,
+              isAvailable: data.restaurant.isAvailable,
             }),
           )
           .catch(() => {
@@ -162,7 +163,10 @@ export function MenuDetail() {
   }
   if (error || !item) return <ErrorState message={error || "Pizza not found"} />;
 
-  const isOrderable = item.approvalStatus === "approved" && item.isActive;
+  const isOrderable =
+    item.approvalStatus === "approved" &&
+    item.isActive &&
+    restaurant?.isAvailable !== false;
   const gallery = item.images?.length ? item.images : [item.image];
   const activeImage = gallery[selectedImage] ?? gallery[0];
   const distribution = item.ratingDistribution;
@@ -238,6 +242,11 @@ export function MenuDetail() {
               <CardContent className="space-y-2 text-sm text-muted-foreground">
                 <p className="flex items-center gap-1.5"><MapPin className="size-4" /> {restaurant.address}</p>
                 {restaurant.openingHours ? <p>{restaurant.openingHours}</p> : null}
+                {!restaurant.isAvailable ? (
+                  <p className="font-medium text-destructive">
+                    This restaurant is temporarily unavailable for orders.
+                  </p>
+                ) : null}
               </CardContent>
             </Card>
           ) : null}

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Loader2, Pencil, Plus, Store, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { DeleteRestaurantDialog } from "@/components/dashboard/delete-restaurant-dialog";
 import { MenuFormDialog } from "@/components/dashboard/menu-form-dialog";
@@ -36,6 +37,7 @@ export function VendorRestaurantsPage() {
   const [editing, setEditing] = useState<RestaurantDto | null>(null);
   const [deleting, setDeleting] = useState<RestaurantDto | null>(null);
   const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [availabilityBusyId, setAvailabilityBusyId] = useState<string | null>(null);
   const [limitDialogOpen, setLimitDialogOpen] = useState(false);
   const autoOpened = useRef(false);
 
@@ -108,6 +110,29 @@ export function VendorRestaurantsPage() {
   const menuCount = (restaurantId: string) =>
     menu.filter((item) => item.restaurantId === restaurantId).length;
 
+  const toggleAvailability = async (restaurant: RestaurantDto) => {
+    if (availabilityBusyId) return;
+    setAvailabilityBusyId(restaurant.id);
+    try {
+      const data = await apiFetch<{
+        success: boolean;
+        message: string;
+        restaurant: RestaurantDto;
+      }>(`/api/restaurants/mine/${restaurant.id}/availability`, {
+        method: "PATCH",
+        body: { isAvailable: !restaurant.isAvailable },
+      });
+      toast.success(data.message);
+      await load();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not update availability",
+      );
+    } finally {
+      setAvailabilityBusyId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
@@ -149,6 +174,15 @@ export function VendorRestaurantsPage() {
                   {restaurant.description}
                 </p>
                 <div className="flex flex-wrap gap-2 text-xs">
+                  <span
+                    className={`rounded-md px-2 py-1 font-medium ${
+                      restaurant.isAvailable
+                        ? "bg-emerald-500/10 text-emerald-600"
+                        : "bg-destructive/10 text-destructive"
+                    }`}
+                  >
+                    {restaurant.isAvailable ? "Available" : "Unavailable"}
+                  </span>
                   <span className="rounded-md bg-muted px-2 py-1 font-medium">
                     {menuCount(restaurant.id)} menu item(s)
                   </span>
@@ -172,6 +206,17 @@ export function VendorRestaurantsPage() {
                 <div className="flex flex-wrap gap-2 pt-1">
                   <Button size="sm" variant="outline" onClick={() => setMenuFor(restaurant.id)}>
                     <Plus className="size-3.5" /> Add Menu
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={availabilityBusyId !== null}
+                    onClick={() => void toggleAvailability(restaurant)}
+                  >
+                    {availabilityBusyId === restaurant.id ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : null}
+                    {restaurant.isAvailable ? "Mark unavailable" : "Mark available"}
                   </Button>
                   <Button size="sm" variant="secondary" onClick={() => openEdit(restaurant)}>
                     <Pencil className="size-3.5" /> Edit
