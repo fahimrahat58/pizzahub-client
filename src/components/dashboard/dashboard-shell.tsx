@@ -62,12 +62,20 @@ const navByRole: Record<UserRole, NavItem[]> = {
   ],
   vendor: [
     { href: "/dashboard/vendor", label: "Overview", icon: LayoutDashboard },
-    { href: "/dashboard/vendor/restaurant", label: "My Restaurant", icon: Store },
+    {
+      href: "/dashboard/vendor/restaurant",
+      label: "My Restaurant",
+      icon: Store,
+    },
     { href: "/dashboard/vendor/menu", label: "My Menu", icon: Pizza },
     { href: "/dashboard/vendor/orders", label: "Orders", icon: ClipboardList },
     { href: "/dashboard/vendor/reviews", label: "Reviews", icon: Star },
     { href: "/dashboard/vendor/profile", label: "Profile", icon: Settings },
-    { href: "/dashboard/vendor/subscription", label: "Subscription", icon: Sparkles },
+    {
+      href: "/dashboard/vendor/subscription",
+      label: "Subscription",
+      icon: Sparkles,
+    },
   ],
   admin: [
     { hash: "overview", label: "Overview", icon: PieChart },
@@ -113,8 +121,11 @@ function SidebarContent({
         aria-label="Dashboard navigation"
       >
         {navByRole[role].map(({ hash, href: itemHref, label, icon: Icon }) => {
-          const href = hash ? `${hashBasePath}#${hash}` : (itemHref ?? hashBasePath);
-          const isVendorSection = itemHref?.startsWith("/dashboard/vendor/") ?? false;
+          const href = hash
+            ? `${hashBasePath}#${hash}`
+            : (itemHref ?? hashBasePath);
+          const isVendorSection =
+            itemHref?.startsWith("/dashboard/vendor/") ?? false;
           const isAdminOrderDetail =
             role === "admin" &&
             hash === "orders" &&
@@ -183,7 +194,7 @@ function SidebarContent({
           ) : (
             <LogOut className="size-4" aria-hidden="true" />
           )}
-          {signingOut ? "Signing out..." : "Sign out"}
+          {signingOut ? "Logging out..." : "Log out"}
         </Button>
       </div>
     </div>
@@ -256,7 +267,9 @@ export function DashboardShell({
       router.replace("/login");
       router.refresh();
     } catch {
-      toast.error("Unable to sign out. Please try again.", { id: "sign-out-error" });
+      toast.error("Unable to sign out. Please try again.", {
+        id: "sign-out-error",
+      });
     } finally {
       signingOutRef.current = false;
       setSigningOut(false);
@@ -343,8 +356,12 @@ export function DashboardShell({
             <Menu className="size-5" aria-hidden="true" />
           </Button>
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium">{safeName}&apos;s workspace</p>
-            <p className="text-xs text-muted-foreground capitalize">{safeRole} dashboard</p>
+            <p className="truncate text-sm font-medium">
+              {safeName}&apos;s workspace
+            </p>
+            <p className="text-xs text-muted-foreground capitalize">
+              {safeRole} dashboard
+            </p>
           </div>
           <div className="ml-auto shrink-0">
             <Link
@@ -355,7 +372,9 @@ export function DashboardShell({
             </Link>
           </div>
         </header>
-        <main className="min-w-0 max-w-none flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="min-w-0 max-w-none flex-1 p-4 sm:p-6 lg:p-8">
+          {children}
+        </main>
       </div>
     </div>
   );
