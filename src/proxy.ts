@@ -1,8 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Fast, coarse redirect for protected pages. Role and blocked checks are
- * repeated on the server in `requireUser` and again by the Express API.
+ * Fast, coarse redirect for protected pages. Only session-cookie presence is
+ * checked here: the Better Auth JWT carries a session id (not a role), so this
+ * layer cannot make a trustworthy role or blocked decision. Definitive checks
+ * are repeated on the server in `requireUser` (AuthGate on /taste-dna) and
+ * again by the Express API's verifyToken + requireRole("customer").
  */
 export function proxy(request: NextRequest) {
   const hasSessionCookie = request.cookies
@@ -20,5 +23,6 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   // `/menu` stays public; `/menu/:id` (item details) requires a session.
-  matcher: ["/dashboard/:path*", "/account/:path*", "/menu/:id"],
+  // `/taste-dna` joins the existing protected set without replacing any matcher.
+  matcher: ["/dashboard/:path*", "/account/:path*", "/menu/:id", "/taste-dna"],
 };

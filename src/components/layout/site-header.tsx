@@ -58,17 +58,30 @@ const roleLinks: Record<UserRole, { href: string; label: string }[]> = {
   ],
 };
 
+// Customer-only, shared by the desktop and mobile navigation.
+const tasteDnaLink = { href: "/taste-dna", label: "Taste DNA" };
+
 export function SiteHeader() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending: sessionPending } = authClient.useSession();
   const role = session?.user ? normalizeRole(session.user.role) : undefined;
   const dashboard = dashboardForRole(role);
+
+  // Navbar visibility is only a hint, not authorization: the page guard and
+  // the Express API both re-check the live session and role. Waiting for
+  // session revalidation prevents a cached/pending session from briefly
+  // flashing this link to a guest or to a non-customer.
+  const showTasteDnaLink =
+    !sessionPending &&
+    session?.user?.role === "customer" &&
+    session.user.isBlocked !== true;
 
   const allLinks = [
     ...publicLinks,
     ...(role ? roleLinks[role] : []),
+    ...(showTasteDnaLink ? [tasteDnaLink] : []),
   ];
 
   const handleSignOut = async () => {

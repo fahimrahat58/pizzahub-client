@@ -49,6 +49,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { hash: "overview", label: "Overview", icon: LayoutDashboard },
     { hash: "orders", label: "My orders", icon: ClipboardList },
     { hash: "favorites", label: "Favorites", icon: Heart },
+    { hash: "taste-dna", label: "Taste DNA", icon: Sparkles },
     { hash: "profile", label: "Profile", icon: Settings },
   ],
   vendor: [

@@ -275,3 +275,37 @@ export interface AdminDashboardResponse {
   recentOrders: OrderDto[];
   recentMenuItems: MenuItemDto[];
 }
+
+export interface TasteScoreEntry {
+  name: string;
+  score: number;
+  signals: number;
+}
+
+export interface TasteBudgetRange {
+  min: number | null;
+  max: number | null;
+  label: string;
+  sampleSize: number;
+}
+
+export interface TasteProfileDto {
+  topCategories: TasteScoreEntry[];
+  favoriteIngredients: TasteScoreEntry[];
+  budgetRange: TasteBudgetRange;
+  totalSignals: number;
+  summary: string;
+  status: "empty" | "developing" | "ready";
+}
+
+export interface TasteRecommendationDto {
+  item: MenuItemDto;
+  matchScore: number;
+  reasons: string[];
+}
+
+export interface TasteDnaResponse {
+  success: boolean;
+  profile: TasteProfileDto;
+  recommendations: TasteRecommendationDto[];
+}

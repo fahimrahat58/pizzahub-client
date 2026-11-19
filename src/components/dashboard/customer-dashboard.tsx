@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { CheckCircle2, ClipboardList, Loader2, XCircle } from "lucide-react";
 
 import { ChartCard } from "@/components/dashboard/chart-card";
@@ -14,15 +15,28 @@ import type { ListResponse, MenuItemDto, OrderDto } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useHashTab } from "@/lib/use-hash-tab";
 
-const TABS = ["overview", "orders", "favorites", "profile"] as const;
+const TABS = ["overview", "orders", "favorites", "taste-dna", "profile"] as const;
 type Tab = (typeof TABS)[number];
 
 const tabLabels: Record<Tab, string> = {
   overview: "Overview",
   orders: "My orders",
   favorites: "Favorites",
+  "taste-dna": "Taste DNA",
   profile: "Profile",
 };
+
+const TasteDnaPanel = dynamic(
+  () => import("@/components/dashboard/taste-dna-panel").then((mod) => mod.TasteDnaPanel),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center py-24 text-muted-foreground">
+        <Loader2 className="mr-2 size-5 animate-spin" /> Loading Taste DNA...
+      </div>
+    ),
+  },
+);
 
 export function CustomerDashboard() {
   const [tab, setTab] = useHashTab<Tab>("overview", TABS);
@@ -80,7 +94,9 @@ export function CustomerDashboard() {
         ))}
       </div>
 
-      {loading ? (
+      {tab === "taste-dna" ? (
+        <TasteDnaPanel favoriteIds={favorites.map((item) => item.id)} onChanged={() => void load()} />
+      ) : loading ? (
         <div className="flex items-center justify-center py-24 text-muted-foreground">
           <Loader2 className="mr-2 size-5 animate-spin" /> Loading dashboard...
         </div>
