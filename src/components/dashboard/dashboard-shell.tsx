@@ -13,6 +13,7 @@ import {
   Menu,
   PieChart,
   Pizza,
+  Receipt,
   Settings,
   Star,
   Store,
@@ -65,7 +66,8 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { hash: "overview", label: "Overview", icon: PieChart },
     { hash: "menu", label: "Menu moderation", icon: BadgeCheck },
     { hash: "users", label: "Users", icon: UsersRound },
-    { hash: "billing", label: "Billing", icon: CreditCard },
+    { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
+    { href: "/dashboard/transactions", label: "Transactions", icon: Receipt },
     { hash: "orders", label: "Orders", icon: ClipboardList },
     { hash: "reviews", label: "Reviews", icon: Star },
     { hash: "profile", label: "Profile", icon: Settings },
@@ -94,6 +96,8 @@ export function DashboardShell({
   const safeRole = normalizeRole(role);
   const safeName = userName?.trim() || "Account";
   const items = navByRole[safeRole];
+  const hashBasePath =
+    safeRole === "admin" ? "/dashboard/admin" : "/dashboard/customer";
 
   useEffect(() => {
     const sync = () => setCurrentHash(window.location.hash || "#overview");
@@ -108,7 +112,7 @@ export function DashboardShell({
       window.removeEventListener("popstate", sync);
       window.removeEventListener(DASHBOARD_HASH_EVENT, syncEvent);
     };
-  }, []);
+  }, [pathname]);
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -151,13 +155,20 @@ export function DashboardShell({
           aria-label="Dashboard navigation"
         >
           {items.map(({ hash, href: itemHref, label, icon: Icon }) => {
-            const href = hash ? `${pathname}#${hash}` : (itemHref ?? pathname);
+            const href = hash
+              ? `${hashBasePath}#${hash}`
+              : (itemHref ?? hashBasePath);
+            // Hash tabs only belong to the dashboard root they are configured
+            // for. Route items use exact matching; vendor section links still
+            // allow nested pages such as /dashboard/vendor/orders/[id].
             const active = hash
-              ? currentHash === `#${hash}`
-              : itemHref === "/dashboard/vendor"
-                ? pathname === itemHref
-                : pathname === itemHref ||
-                  (itemHref ? pathname.startsWith(`${itemHref}/`) : false);
+              ? pathname === hashBasePath && currentHash === `#${hash}`
+              : itemHref
+                ? itemHref.startsWith("/dashboard/vendor")
+                  ? pathname === itemHref ||
+                    pathname.startsWith(`${itemHref}/`)
+                  : pathname === itemHref
+                : false;
             return (
               <Link
                 key={label}

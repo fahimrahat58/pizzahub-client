@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ClipboardList,
   CreditCard,
@@ -60,7 +61,7 @@ import type {
 import { cn } from "@/lib/utils";
 import { useHashTab } from "@/lib/use-hash-tab";
 
-const TABS = ["overview", "menu", "users", "billing", "orders", "reviews", "profile"] as const;
+const TABS = ["overview", "menu", "users", "billing", "transactions", "orders", "reviews", "profile"] as const;
 type Tab = (typeof TABS)[number];
 
 const tabLabels: Record<Tab, string> = {
@@ -68,9 +69,15 @@ const tabLabels: Record<Tab, string> = {
   menu: "Menu moderation",
   users: "Users",
   billing: "Billing",
+  transactions: "Transactions",
   orders: "Orders",
   reviews: "Reviews",
   profile: "Profile",
+};
+
+const ROUTE_TABS: Partial<Record<Tab, string>> = {
+  billing: "/dashboard/billing",
+  transactions: "/dashboard/transactions",
 };
 
 type MenuDecision = {
@@ -91,9 +98,26 @@ const formatDate = (value: string) =>
 
 const formatOptionalDate = (value: string | null) => (value ? formatDate(value) : "—");
 
-export function AdminDashboard() {
-  const [tab, setTab] = useHashTab<Tab>("overview", TABS);
+export function AdminDashboard({ initialTab = "overview" }: { initialTab?: Tab }) {
+  const router = useRouter();
+  const routeDrivenTab = initialTab === "billing" || initialTab === "transactions";
+  const [tab, setTab] = useHashTab<Tab>(initialTab, TABS, {
+    syncHash: !routeDrivenTab,
+  });
   const { data: session } = authClient.useSession();
+
+  const openTab = (value: Tab) => {
+    const route = ROUTE_TABS[value];
+    if (route) {
+      router.push(route);
+      return;
+    }
+    if (routeDrivenTab) {
+      router.push(`/dashboard/admin#${value}`);
+      return;
+    }
+    setTab(value);
+  };
 
   const [summary, setSummary] = useState<AdminStatsPayload | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItemDto[]>([]);
@@ -380,7 +404,7 @@ export function AdminDashboard() {
     <div className="space-y-8">
       <PageHeader
         eyebrow="Admin control centre"
-        title="Platform overview"
+        title={tab === "overview" ? "Platform overview" : tabLabels[tab]}
         description="Review new listings, moderate users, and keep an eye on every order."
       />
 
@@ -389,7 +413,7 @@ export function AdminDashboard() {
           <button
             key={value}
             type="button"
-            onClick={() => setTab(value)}
+            onClick={() => openTab(value)}
             className={cn(
               "rounded-lg px-3.5 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground",
               tab === value && "bg-orange-500/10 text-orange-600 dark:text-orange-400",
@@ -403,6 +427,7 @@ export function AdminDashboard() {
       {coreLoading &&
       tab !== "users" &&
       tab !== "billing" &&
+      tab !== "transactions" &&
       tab !== "reviews" &&
       tab !== "profile" ? (
         <div className="flex items-center justify-center py-24 text-muted-foreground">
@@ -411,6 +436,7 @@ export function AdminDashboard() {
       ) : coreError &&
         tab !== "users" &&
         tab !== "billing" &&
+        tab !== "transactions" &&
         tab !== "reviews" &&
         tab !== "profile" ? (
         <ErrorState message={coreError} onRetry={() => void loadCore()} />
@@ -846,6 +872,15 @@ export function AdminDashboard() {
               </CardContent>
             </Card>
           ) : null}
+
+        </div>
+      ) : tab === "transactions" ? (
+        <div className="space-y-5">
+          <PageHeader
+            eyebrow="Read-only payments"
+            title="Transactions"
+            description="Verified payment records synced from Stripe webhooks."
+          />
 
           <Card>
             <CardHeader>

@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
-import { dashboardForRole } from "@/lib/roles";
+import { postAuthDestination } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
 const registerSchema = z
@@ -98,8 +98,17 @@ export default function RegisterPage() {
         return;
       }
 
+      // Use the freshly loaded server session. The signup response is only a
+      // fallback and never the form's client-supplied role.
+      const session = await authClient.getSession();
+      const role = session.data?.user.role ?? data?.user.role;
+      if (session.error || !role) {
+        toast.error("We couldn't load your session. Please try again.");
+        return;
+      }
+
       toast.success("Welcome to PizzaHub!");
-      router.replace(dashboardForRole(data?.user?.role ?? values.role));
+      router.replace(postAuthDestination(role));
       router.refresh();
     } catch (error) {
       toast.error(

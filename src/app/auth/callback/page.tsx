@@ -7,8 +7,7 @@ import { toast } from "sonner";
 
 import { authClient } from "@/lib/auth-client";
 import { clearApiToken } from "@/lib/api";
-import { dashboardForRole } from "@/lib/roles";
-import type { UserRole } from "@/lib/types";
+import { postAuthDestination } from "@/lib/roles";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -26,7 +25,7 @@ export default function AuthCallbackPage() {
       return;
     }
     clearApiToken();
-    router.replace(dashboardForRole(session.user.role as UserRole));
+    router.replace(postAuthDestination(session.user.role));
     router.refresh();
   }, [isPending, router, session, error]);
 

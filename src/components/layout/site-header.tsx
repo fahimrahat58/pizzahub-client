@@ -54,7 +54,7 @@ const roleLinks: Record<UserRole, { href: string; label: string }[]> = {
   admin: [
     { href: "/dashboard/admin#users", label: "Manage Users" },
     { href: "/dashboard/admin#menu", label: "Menu Items" },
-    { href: "/dashboard/admin#transactions", label: "Transactions" },
+    { href: "/dashboard/transactions", label: "Transactions" },
   ],
 };
 

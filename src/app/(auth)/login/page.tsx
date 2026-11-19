@@ -14,8 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
-import { dashboardForRole } from "@/lib/roles";
-import type { UserRole } from "@/lib/types";
+import { postAuthDestination } from "@/lib/roles";
 
 const loginSchema = z.object({
   email: z.email("Enter a valid email address"),
@@ -41,7 +40,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isPending && session?.user) {
-      router.replace(dashboardForRole(session.user.role as UserRole));
+      router.replace(postAuthDestination(session.user.role));
     }
   }, [isPending, router, session]);
 
@@ -57,8 +56,16 @@ export default function LoginPage() {
         return;
       }
 
+      // Read the role from the server-backed session after the cookies are set.
+      // The sign-in response is not used for authorization.
+      const session = await authClient.getSession();
+      if (session.error || !session.data?.user) {
+        toast.error("We couldn't load your session. Please try again.");
+        return;
+      }
+
       toast.success("Welcome back!");
-      router.replace("/auth/callback");
+      router.replace(postAuthDestination(session.data.user.role));
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not sign in");

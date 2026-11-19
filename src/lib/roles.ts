@@ -11,3 +11,14 @@ export const dashboardForRole = (role?: UserRole | string | null): string => {
   if (normalized === "admin") return "/dashboard/admin";
   return "/dashboard/customer";
 };
+
+/**
+ * Destination after a successful sign-in or sign-up. Customers stay on the
+ * public homepage, while privileged roles go to their protected dashboards.
+ * Only exact server-provided roles are trusted here.
+ */
+export const postAuthDestination = (role?: UserRole | string | null): string => {
+  if (role === "vendor") return "/dashboard/vendor";
+  if (role === "admin") return "/dashboard/admin";
+  return "/";
+};
