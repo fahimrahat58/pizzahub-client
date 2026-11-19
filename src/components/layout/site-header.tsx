@@ -179,7 +179,9 @@ export function SiteHeader() {
       router.replace("/login");
       router.refresh();
     } catch {
-      toast.error("Unable to sign out. Please try again.", { id: "sign-out-error" });
+      toast.error("Unable to sign out. Please try again.", {
+        id: "sign-out-error",
+      });
     } finally {
       // The header stays mounted across route changes, so a success must reset
       // this too. Otherwise the next sign-in reuses the stuck "Signing out"
@@ -200,7 +202,10 @@ export function SiteHeader() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <Brand className="text-xl sm:text-2xl" />
 
-        <nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation">
+        <nav
+          className="hidden items-center gap-1 md:flex"
+          aria-label="Main navigation"
+        >
           <Suspense
             fallback={
               <NavLinkItems
@@ -272,17 +277,27 @@ export function SiteHeader() {
                   aria-busy={signingOut}
                   onClick={() => void handleSignOut()}
                 >
-                  {signingOut ? <Loader2 className="animate-spin" /> : <LogOut />}
+                  {signingOut ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <LogOut />
+                  )}
                   {signingOut ? "Signing out..." : "Logout"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
             <>
-              <Link href="/login" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
+              <Link
+                href="/login"
+                className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+              >
                 Sign In
               </Link>
-              <Link href="/register" className={cn(buttonVariants({ size: "sm" }))}>
+              <Link
+                href="/register"
+                className={cn(buttonVariants({ size: "sm" }))}
+              >
                 Sign Up
               </Link>
             </>
@@ -336,8 +351,12 @@ export function SiteHeader() {
                     </span>
                   )}
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{session.user.name}</p>
-                    <p className="truncate text-xs text-muted-foreground">{session.user.email}</p>
+                    <p className="truncate text-sm font-semibold">
+                      {session.user.name}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {session.user.email}
+                    </p>
                   </div>
                 </div>
                 <Link
@@ -362,7 +381,10 @@ export function SiteHeader() {
                   className="flex items-center gap-2 rounded-md px-3 py-2.5 text-left text-sm font-medium text-destructive hover:bg-destructive/10"
                 >
                   {signingOut ? (
-                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                    <Loader2
+                      className="size-4 animate-spin"
+                      aria-hidden="true"
+                    />
                   ) : (
                     <LogOut className="size-4" aria-hidden="true" />
                   )}
