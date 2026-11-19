@@ -35,7 +35,7 @@ export function MenuBrowser() {
     search: "",
     category: "",
     location: "",
-    sort: "newest",
+    sort: "",
     vendorId: "",
     restaurantId: "",
   });
@@ -53,6 +53,7 @@ export function MenuBrowser() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const urlSort = params.get("sort");
     queueMicrotask(() => {
       setFilters((current) => ({
         ...current,
@@ -61,7 +62,7 @@ export function MenuBrowser() {
         location: params.get("location") ?? "",
         vendorId: params.get("vendorId") ?? "",
         restaurantId: params.get("restaurantId") ?? "",
-        sort: params.get("sort") ?? current.sort,
+        sort: urlSort === "newest" ? "" : (urlSort ?? current.sort),
       }));
       setReady(true);
     });
@@ -121,8 +122,9 @@ export function MenuBrowser() {
     const params = new URLSearchParams({
       page: String(page),
       limit: String(PAGE_SIZE),
-      sort: filters.sort,
     });
+    // No sort selected means the default Newest First ordering on the server.
+    if (filters.sort) params.set("sort", filters.sort);
     if (debouncedSearch) params.set("search", debouncedSearch);
     if (filters.category) params.set("category", filters.category);
     if (filters.location) params.set("location", filters.location);
@@ -166,7 +168,7 @@ export function MenuBrowser() {
     if (next.location) params.set("location", next.location);
     if (next.vendorId) params.set("vendorId", next.vendorId);
     if (next.restaurantId) params.set("restaurantId", next.restaurantId);
-    if (next.sort !== "newest") params.set("sort", next.sort);
+    if (next.sort) params.set("sort", next.sort);
     const query = params.toString();
     window.history.replaceState(
       null,
@@ -255,7 +257,8 @@ export function MenuBrowser() {
               onChange={(event) => updateFilter("sort", event.target.value)}
               className="h-9 w-full rounded-md border border-input bg-transparent px-2.5 text-sm text-foreground shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
             >
-              <option value="newest">Newest</option>
+              <option value="">Default</option>
+              <option value="oldest">Oldest</option>
               <option value="rating">Top rated</option>
               <option value="price_asc">Price: low to high</option>
               <option value="price_desc">Price: high to low</option>
@@ -268,7 +271,7 @@ export function MenuBrowser() {
                 search: "",
                 category: "",
                 location: "",
-                sort: "newest",
+                sort: "",
                 vendorId: "",
                 restaurantId: "",
               };

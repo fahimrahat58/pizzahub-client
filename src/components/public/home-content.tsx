@@ -31,6 +31,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { publicApi } from "@/lib/api";
 import type { MenuItemDto, RestaurantDto } from "@/lib/types";
 
+/** Newest first; missing or invalid dates fall to the end instead of throwing. */
+const newestFirst = (a: MenuItemDto, b: MenuItemDto): number => {
+  const aTime = Date.parse(a.createdAt);
+  const bTime = Date.parse(b.createdAt);
+  const aValid = Number.isFinite(aTime);
+  const bValid = Number.isFinite(bTime);
+  if (aValid && bValid) return bTime - aTime;
+  if (aValid) return -1;
+  if (bValid) return 1;
+  return 0;
+};
+
 const steps = [
   { icon: Search, title: "Find your slice", text: "Browse menus from kitchens near you." },
   { icon: Heart, title: "Save favourites", text: "Keep the pizzas you love one tap away." },
@@ -120,7 +132,7 @@ export function HomeContent() {
       Promise.all([
         publicApi<{ success: boolean; items: MenuItemDto[] }>("/api/menu/featured"),
         publicApi<{ success: boolean; items: MenuItemDto[] }>(
-          "/api/menu?limit=6&sort=newest",
+          "/api/menu?limit=8&sort=newest",
         ),
         publicApi<{ success: boolean; items: MenuItemDto[] }>(
           "/api/menu?limit=4&sort=rating",
@@ -129,14 +141,13 @@ export function HomeContent() {
       ])
         .then(([featuredData, publicData, popularData, restaurantData]) => {
           if (!active) return;
-          // Featured items come first, then fill up to six with any approved and
-          // active items so the section always satisfies the six-item minimum.
-          const collected = [...featuredData.items];
-          for (const item of publicData.items) {
-            if (collected.length >= 8) break;
-            if (!collected.some((existing) => existing.id === item.id)) collected.push(item);
+          // Show only the eight most recently added items, regardless of the
+          // featured flag. Deduplicate first so the limit is not wasted.
+          const byId = new Map<string, MenuItemDto>();
+          for (const item of [...featuredData.items, ...publicData.items]) {
+            if (!byId.has(item.id)) byId.set(item.id, item);
           }
-          setFeatured(collected.slice(0, 8));
+          setFeatured([...byId.values()].sort(newestFirst).slice(0, 8));
           setPopular(popularData.items);
           setRestaurants(restaurantData.restaurants.slice(0, 3));
         })
