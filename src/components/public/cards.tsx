@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Crown, Heart, MapPin, Star, UtensilsCrossed } from "lucide-react";
 import { toast } from "sonner";
 
+import { AddToCartButton } from "@/components/cart/add-to-cart-button";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api";
@@ -161,12 +162,17 @@ export function PizzaCard({
             {item.ratingAvg.toFixed(1)} ({item.reviewCount})
           </span>
         </div>
-        <Link
-          href={`/menu/${item.id}`}
-          className={cn(buttonVariants({ variant: "outline", size: "sm" }), "mt-auto w-full pt-2")}
-        >
-          View Details
-        </Link>
+        <div className="mt-auto flex gap-2 pt-2">
+          <Link
+            href={`/menu/${item.id}`}
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }), "flex-1")}
+          >
+            View Details
+          </Link>
+          {item.approvalStatus === "approved" && item.isActive ? (
+            <AddToCartButton menuItemId={item.id} label="Add" />
+          ) : null}
+        </div>
       </div>
     </article>
   );

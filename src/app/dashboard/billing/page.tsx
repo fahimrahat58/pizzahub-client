@@ -1,5 +1,8 @@
 import { redirect } from "next/navigation";
 
-export default function BillingPage() {
+import { requireUser } from "@/lib/auth-guards";
+
+export default async function BillingPage() {
+  await requireUser(["admin"]);
   redirect("/dashboard/admin#billing");
 }

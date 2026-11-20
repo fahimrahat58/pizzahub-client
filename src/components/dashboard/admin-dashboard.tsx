@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 
 import { AdminReviewsPanel } from "@/components/dashboard/admin-reviews-panel";
+import { AdminTransactionsPanel } from "@/components/dashboard/admin-transactions-panel";
 import { ChartCard } from "@/components/dashboard/chart-card";
 import { DashboardOverviewSkeleton } from "@/components/dashboard/dashboard-overview-skeleton";
 import { OrderCard } from "@/components/dashboard/order-card";
@@ -58,7 +59,6 @@ import type {
   OrderDto,
   Pagination,
   SubscriptionEventDto,
-  TransactionDto,
   UserDto,
   UserRole,
 } from "@/lib/types";
@@ -129,9 +129,6 @@ export function AdminDashboard() {
     events: SubscriptionEventDto[];
   } | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [transactions, setTransactions] = useState<TransactionDto[]>([]);
-  const [transactionsLoading, setTransactionsLoading] = useState(true);
-  const [transactionsError, setTransactionsError] = useState("");
 
   const [decision, setDecision] = useState<MenuDecision | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -208,24 +205,6 @@ export function AdminDashboard() {
     }
   }, [billingSearch]);
 
-  const loadTransactions = useCallback(async () => {
-    setTransactionsLoading(true);
-    setTransactionsError("");
-    try {
-      const data = await apiFetch<{
-        success: boolean;
-        transactions: TransactionDto[];
-      }>("/api/admin/transactions?limit=100");
-      setTransactions(data.transactions);
-    } catch (error) {
-      setTransactionsError(
-        error instanceof Error ? error.message : "Could not load transactions",
-      );
-    } finally {
-      setTransactionsLoading(false);
-    }
-  }, []);
-
   const openBillingHistory = async (vendor: UserDto) => {
     setHistoryLoading(true);
     try {
@@ -254,13 +233,9 @@ export function AdminDashboard() {
     void Promise.resolve().then(loadBilling);
   }, [loadBilling]);
 
-  useEffect(() => {
-    void Promise.resolve().then(loadTransactions);
-  }, [loadTransactions]);
-
   const refresh = useCallback(async () => {
-    await Promise.all([loadCore(), loadUsers(), loadBilling(), loadTransactions()]);
-  }, [loadCore, loadUsers, loadBilling, loadTransactions]);
+    await Promise.all([loadCore(), loadUsers(), loadBilling()]);
+  }, [loadBilling, loadCore, loadUsers]);
 
   const openDecision = (item: MenuItemDto, action: MenuDecision["action"]) => {
     setDecision({ item, action });
@@ -864,78 +839,7 @@ export function AdminDashboard() {
 
         </div>
       ) : tab === "transactions" ? (
-        <div className="space-y-5">
-          <PageHeader
-            eyebrow="Read-only payments"
-            title="Transactions"
-            description="Verified payment records synced from Stripe webhooks."
-          />
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Payment transactions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {transactionsLoading ? (
-                <div className="flex items-center justify-center py-10 text-muted-foreground">
-                  <Loader2 className="mr-2 size-5 animate-spin" /> Loading transactions...
-                </div>
-              ) : transactionsError ? (
-                <ErrorState
-                  message={transactionsError}
-                  onRetry={() => void loadTransactions()}
-                />
-              ) : transactions.length ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                        <th className="py-2 pr-4 font-medium">Vendor</th>
-                        <th className="py-2 pr-4 font-medium">Plan</th>
-                        <th className="py-2 pr-4 font-medium">Cycle</th>
-                        <th className="py-2 pr-4 font-medium">Amount</th>
-                        <th className="py-2 pr-4 font-medium">Status</th>
-                        <th className="py-2 pr-4 font-medium">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {transactions.map((transaction) => (
-                        <tr
-                          key={transaction.id}
-                          className="border-b border-border/60 last:border-0"
-                        >
-                          <td className="py-2.5 pr-4">
-                            <p className="font-medium">{transaction.vendorName}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {transaction.vendorEmail}
-                            </p>
-                          </td>
-                          <td className="py-2.5 pr-4 capitalize">
-                            <Badge variant="secondary">{transaction.plan}</Badge>
-                          </td>
-                          <td className="py-2.5 pr-4 text-muted-foreground">
-                            {billingIntervalLabel(transaction.billingInterval) ?? "—"}
-                          </td>
-                          <td className="py-2.5 pr-4 font-medium">
-                            {transaction.currency} {transaction.amount.toFixed(2)}
-                          </td>
-                          <td className="py-2.5 pr-4 capitalize">{transaction.status}</td>
-                          <td className="py-2.5 pr-4 text-muted-foreground">
-                            {formatDate(transaction.createdAt)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  No payment transactions recorded yet.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        <AdminTransactionsPanel stats={summary?.stats} />
       ) : tab === "orders" ? (
         orders.length ? (
           <div className="grid gap-5 xl:grid-cols-2">

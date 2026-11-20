@@ -1,5 +1,8 @@
 import { redirect } from "next/navigation";
 
-export default function TransactionsPage() {
+import { requireUser } from "@/lib/auth-guards";
+
+export default async function TransactionsPage() {
+  await requireUser(["admin"]);
   redirect("/dashboard/admin#transactions");
 }

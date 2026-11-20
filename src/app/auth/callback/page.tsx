@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { clearApiToken } from "@/lib/api";
 import { postAuthDestination } from "@/lib/roles";
+import { loginWithReturn, safeReturnPath } from "@/lib/safe-return";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -15,9 +16,10 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     if (isPending) return;
+    const nextPath = safeReturnPath(new URLSearchParams(window.location.search).get("next"));
     if (!session?.user) {
       toast.error("We couldn't complete sign-in. Please try again.");
-      router.replace("/login");
+      router.replace(loginWithReturn(nextPath));
       return;
     }
     if (session.user.isBlocked === true) {
@@ -25,7 +27,7 @@ export default function AuthCallbackPage() {
       return;
     }
     clearApiToken();
-    router.replace(postAuthDestination(session.user.role));
+    router.replace(nextPath ?? postAuthDestination(session.user.role));
     router.refresh();
   }, [isPending, router, session, error]);
 

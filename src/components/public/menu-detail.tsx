@@ -1,14 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Crown, Loader2, MapPin, Star, Truck } from "lucide-react";
-import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod";
 
+import { AddToCartButton } from "@/components/cart/add-to-cart-button";
+import { useCart } from "@/components/cart/cart-provider";
 import { FavoriteButton } from "@/components/public/cards";
 import { ProductReviews } from "@/components/public/product-reviews";
 import { ApprovalBadge, ErrorState, LinkButton, PageHeader } from "@/components/shared/ui-kit";
@@ -25,7 +24,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { apiFetch, publicApi } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import type {
@@ -34,13 +32,6 @@ import type {
   RestaurantSummaryDto,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-const orderSchema = z.object({
-  quantity: z.number().int().min(1).max(20),
-  deliveryAddress: z.string().trim().min(10, "Enter a complete delivery address").max(300),
-  deliveryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a delivery date"),
-  message: z.string().trim().max(500).optional(),
-});
 
 export function MenuDetail() {
   const params = useParams<{ id: string }>();
@@ -55,16 +46,10 @@ export function MenuDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [orderDialogOpen, setOrderDialogOpen] = useState(false);
-
-  const orderForm = useForm<z.infer<typeof orderSchema>>({
-    resolver: zodResolver(orderSchema),
-    defaultValues: {
-      quantity: 1,
-      deliveryAddress: "",
-      deliveryDate: new Date().toISOString().slice(0, 10),
-      message: "",
-    },
-  });
+  const [quantity, setQuantity] = useState(1);
+  const [checkoutPending, setCheckoutPending] = useState(false);
+  const checkoutPendingRef = useRef(false);
+  const { addItem, actionPending } = useCart();
 
   const loadItem = useCallback(async () => {
     setLoading(true);
@@ -134,23 +119,22 @@ export function MenuDetail() {
     void loadFavoriteIds();
   }, [loadFavoriteIds, id]);
 
-  const placeOrder = async (values: z.infer<typeof orderSchema>) => {
+  const continueToCheckout = async () => {
+    if (checkoutPendingRef.current || actionPending) return;
+    checkoutPendingRef.current = true;
+    setCheckoutPending(true);
     try {
-      await apiFetch("/api/orders", {
-        method: "POST",
-        body: {
-          menuItemId: id,
-          quantity: values.quantity,
-          deliveryAddress: values.deliveryAddress,
-          deliveryDate: values.deliveryDate,
-          message: values.message ?? "",
-        },
-      });
+      await addItem(id, quantity);
       setOrderDialogOpen(false);
-      toast.success("Order placed! Track it in your dashboard.");
-      router.push("/dashboard/customer");
+      toast.success("Added to your cart");
+      router.push("/checkout");
     } catch (orderError) {
-      toast.error(orderError instanceof Error ? orderError.message : "Could not place order");
+      toast.error(
+        orderError instanceof Error ? orderError.message : "Could not open secure checkout",
+      );
+    } finally {
+      checkoutPendingRef.current = false;
+      setCheckoutPending(false);
     }
   };
 
@@ -311,88 +295,67 @@ export function MenuDetail() {
                 {session?.user ? (
                   session.user.role === "customer" ? (
                     <>
-                      <Button
-                        type="button"
-                        className="w-full"
-                        size="lg"
-                        onClick={() => setOrderDialogOpen(true)}
-                      >
-                        Order Now
-                      </Button>
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <Button
+                          type="button"
+                          className="flex-1"
+                          size="lg"
+                          onClick={() => setOrderDialogOpen(true)}
+                        >
+                          Order Now
+                        </Button>
+                        <AddToCartButton
+                          menuItemId={item.id}
+                          size="lg"
+                          variant="secondary"
+                          label="Add to cart"
+                          className="flex-1"
+                        />
+                      </div>
                       <Dialog open={orderDialogOpen} onOpenChange={setOrderDialogOpen}>
-                        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+                        <DialogContent className="sm:max-w-md">
                           <DialogHeader>
                             <DialogTitle>Order this pizza</DialogTitle>
                             <DialogDescription>
-                              Enter your delivery details to place your order.
+                              Choose a quantity. We&apos;ll add it to your cart and open Stripe
+                              Checkout for your delivery details and secure payment.
                             </DialogDescription>
                           </DialogHeader>
-                          <form
-                            onSubmit={orderForm.handleSubmit((values) => void placeOrder(values))}
-                            className="space-y-4"
-                          >
-                            <div className="grid gap-4 sm:grid-cols-2">
-                              <div className="space-y-2">
-                                <Label htmlFor="quantity">Quantity</Label>
-                                <Input
-                                  id="quantity"
-                                  type="number"
-                                  min={1}
-                                  max={20}
-                                  {...orderForm.register("quantity", { valueAsNumber: true })}
-                                />
-                                {orderForm.formState.errors.quantity ? (
-                                  <p className="text-xs text-destructive">
-                                    {orderForm.formState.errors.quantity.message}
-                                  </p>
-                                ) : null}
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="deliveryDate">Delivery date</Label>
-                                <Input id="deliveryDate" type="date" {...orderForm.register("deliveryDate")} />
-                                {orderForm.formState.errors.deliveryDate ? (
-                                  <p className="text-xs text-destructive">
-                                    {orderForm.formState.errors.deliveryDate.message}
-                                  </p>
-                                ) : null}
-                              </div>
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="deliveryAddress">Delivery address</Label>
-                              <Textarea
-                                id="deliveryAddress"
-                                placeholder="Street, city, and any delivery notes"
-                                {...orderForm.register("deliveryAddress")}
-                              />
-                              {orderForm.formState.errors.deliveryAddress ? (
-                                <p className="text-xs text-destructive">
-                                  {orderForm.formState.errors.deliveryAddress.message}
-                                </p>
+                          <div className="space-y-2">
+                            <Label htmlFor="quantity">Quantity</Label>
+                            <Input
+                              id="quantity"
+                              type="number"
+                              min={1}
+                              max={20}
+                              value={quantity}
+                              onChange={(event) => {
+                                const next = Number(event.target.value);
+                                setQuantity(Number.isFinite(next) ? Math.min(20, Math.max(1, next)) : 1);
+                              }}
+                            />
+                          </div>
+                          <DialogFooter>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => setOrderDialogOpen(false)}
+                              disabled={checkoutPending || actionPending}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              type="button"
+                              onClick={() => void continueToCheckout()}
+                              disabled={checkoutPending || actionPending}
+                              aria-busy={checkoutPending || actionPending}
+                            >
+                              {checkoutPending || actionPending ? (
+                                <Loader2 className="mr-2 size-4 animate-spin" />
                               ) : null}
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="message">Message for the kitchen (optional)</Label>
-                              <Input id="message" placeholder="Extra sauce please!" {...orderForm.register("message")} />
-                            </div>
-                            <DialogFooter>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setOrderDialogOpen(false)}
-                              >
-                                Cancel
-                              </Button>
-                              <Button
-                                type="submit"
-                                disabled={orderForm.formState.isSubmitting}
-                              >
-                                {orderForm.formState.isSubmitting ? (
-                                  <Loader2 className="size-4 animate-spin" />
-                                ) : null}
-                                Order · ${(item.price * orderForm.watch("quantity")).toFixed(2)}
-                              </Button>
-                            </DialogFooter>
-                          </form>
+                              Continue to checkout · ${(item.price * quantity).toFixed(2)}
+                            </Button>
+                          </DialogFooter>
                         </DialogContent>
                       </Dialog>
                     </>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CheckCircle2, Clock3, Loader2, MapPin, PackageCheck, Star, Truck, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
+import { PaymentStatusBadge } from "@/components/payments/payment-badges";
 import { ReviewDialog } from "@/components/public/review-dialog";
 import {
   ConfirmDialog,
@@ -71,6 +72,19 @@ export function OrderCard({
   })();
 
   const detailHref = `/dashboard/${role}/orders/${order.id}`;
+  const displayItems = order.items?.length
+    ? order.items
+    : [
+        {
+          menuItemId: order.menuItemId,
+          name: order.menuItemSnapshot.name,
+          image: order.menuItemSnapshot.image,
+          unitPrice: order.unitPrice,
+          quantity: order.quantity,
+          lineTotal: order.totalPrice,
+          restaurantName: order.menuItemSnapshot.restaurantName ?? order.restaurantName,
+        },
+      ];
 
   return (
     <Card>
@@ -84,25 +98,47 @@ export function OrderCard({
             View details
           </Link>
         </div>
-        <OrderStatusBadge status={order.status} />
+        <div className="flex flex-col items-end gap-2">
+          <OrderStatusBadge status={order.status} />
+          {order.paymentStatus ? (
+            <PaymentStatusBadge status={order.paymentStatus} />
+          ) : null}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex gap-3 rounded-xl bg-muted/40 p-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={order.menuItemSnapshot.image}
-            alt={order.menuItemSnapshot.name}
-            className="size-16 rounded-lg object-cover"
-          />
-          <div className="min-w-0 flex-1">
-            <p className="font-medium">{order.menuItemSnapshot.name}</p>
-            <p className="text-sm text-muted-foreground">
-              Qty {order.quantity} × ${order.unitPrice.toFixed(2)}
-            </p>
-            <p className="mt-1 font-semibold text-primary">
-              ${order.totalPrice.toFixed(2)}
-            </p>
-          </div>
+        <div className="space-y-2 rounded-xl bg-muted/40 p-3">
+          {displayItems.map((item) => (
+            <div key={item.menuItemId} className="flex gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={item.image}
+                alt={item.name}
+                className="size-16 rounded-lg object-cover"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">{item.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  Qty {item.quantity} × ${item.unitPrice.toFixed(2)}
+                </p>
+                {item.restaurantName ? (
+                  <p className="text-xs text-muted-foreground">{item.restaurantName}</p>
+                ) : null}
+                <p className="mt-1 font-semibold text-primary">
+                  ${item.lineTotal.toFixed(2)}
+                </p>
+              </div>
+            </div>
+          ))}
+          {order.items?.length ? (
+            <div className="flex justify-between border-t border-border/60 pt-2 text-sm">
+              <span className="text-muted-foreground">
+                Subtotal ${order.subtotal?.toFixed(2)} · Delivery ${order.deliveryFee?.toFixed(2)}
+              </span>
+              <span className="font-semibold text-primary">
+                ${(order.totalAmount ?? order.totalPrice).toFixed(2)}
+              </span>
+            </div>
+          ) : null}
         </div>
 
         <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">

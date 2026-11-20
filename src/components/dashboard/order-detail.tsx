@@ -3,11 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, CreditCard, Loader2 } from "lucide-react";
 
 import { OrderCard } from "@/components/dashboard/order-card";
+import { PaymentStatusBadge } from "@/components/payments/payment-badges";
 import { ErrorState, PageHeader } from "@/components/shared/ui-kit";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApiError, apiFetch } from "@/lib/api";
+import { formatMoney } from "@/lib/payment-api";
 import type { OrderDto } from "@/lib/types";
 
 export function OrderDetail({ role }: { role: "customer" | "vendor" | "admin" }) {
@@ -66,6 +70,50 @@ export function OrderDetail({ role }: { role: "customer" | "vendor" | "admin" })
         description="Every status change is recorded in the timeline below."
       />
       <OrderCard order={order} role={role} onChanged={() => void load()} />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <CreditCard className="size-4 text-primary" /> Payment information
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
+          <div className="rounded-lg bg-muted/40 p-3">
+            <p className="text-xs text-muted-foreground">Payment status</p>
+            <div className="mt-1">
+              {order.paymentStatus ? (
+                <PaymentStatusBadge status={order.paymentStatus} />
+              ) : (
+                <Badge variant="outline">Not recorded</Badge>
+              )}
+            </div>
+          </div>
+          <div className="rounded-lg bg-muted/40 p-3">
+            <p className="text-xs text-muted-foreground">Order status</p>
+            <p className="mt-1 font-medium capitalize">{order.status.replaceAll("_", " ")}</p>
+          </div>
+          <div className="rounded-lg bg-muted/40 p-3">
+            <p className="text-xs text-muted-foreground">Amount paid</p>
+            <p className="mt-1 font-semibold text-primary">
+              {formatMoney(order.totalAmount ?? order.totalPrice, order.currency ?? "usd")}
+            </p>
+          </div>
+          <div className="rounded-lg bg-muted/40 p-3">
+            <p className="text-xs text-muted-foreground">Provider</p>
+            <p className="mt-1 font-medium capitalize">{order.paymentMethod ?? "Not recorded"}</p>
+          </div>
+          <div className="rounded-lg bg-muted/40 p-3 sm:col-span-2">
+            <p className="text-xs text-muted-foreground">Secure payment reference</p>
+            <p className="mt-1 break-all font-mono text-xs">
+              {order.stripePaymentIntentId
+                ? `${order.stripePaymentIntentId.slice(0, 20)}…`
+                : order.stripeSessionId
+                  ? `${order.stripeSessionId.slice(0, 20)}…`
+                  : "No payment reference yet"}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

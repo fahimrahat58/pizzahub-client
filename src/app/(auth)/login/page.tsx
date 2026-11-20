@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
 import { postAuthDestination } from "@/lib/roles";
+import { safeReturnPath } from "@/lib/safe-return";
 
 const loginSchema = z.object({
   email: z.email("Enter a valid email address"),
@@ -41,6 +42,7 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [nextPath, setNextPath] = useState<string | null>(null);
   const { data: session, isPending } = authClient.useSession();
 
   const {
@@ -53,14 +55,18 @@ export default function LoginPage() {
   });
 
   useEffect(() => {
+    setNextPath(safeReturnPath(new URLSearchParams(window.location.search).get("next")));
+  }, []);
+
+  useEffect(() => {
     if (!isPending && session?.user) {
       router.replace(
         session.user.isBlocked === true
           ? "/blocked"
-          : postAuthDestination(session.user.role),
+          : nextPath ?? postAuthDestination(session.user.role),
       );
     }
-  }, [isPending, router, session]);
+  }, [isPending, nextPath, router, session]);
 
   const onSubmit = async (values: LoginValues) => {
     if (submittingRef.current) return;
@@ -93,7 +99,7 @@ export default function LoginPage() {
       }
 
       toast.success("Signed in successfully!", { id: "sign-in-success" });
-      router.replace(postAuthDestination(session.data.user.role));
+      router.replace(nextPath ?? postAuthDestination(session.data.user.role));
       router.refresh();
     } catch {
       toast.error("Something went wrong. Please try again.", { id: "sign-in-error" });
@@ -106,9 +112,12 @@ export default function LoginPage() {
   const handleGoogle = async () => {
     setGoogleLoading(true);
     try {
+      const callbackURL = nextPath
+        ? `/auth/callback?next=${encodeURIComponent(nextPath)}`
+        : "/auth/callback";
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/auth/callback",
+        callbackURL,
       });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Google sign-in failed");

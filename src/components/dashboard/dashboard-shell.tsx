@@ -16,6 +16,7 @@ import {
   Pizza,
   Receipt,
   Settings,
+  ShoppingCart,
   Star,
   Store,
   Sparkles,
@@ -25,7 +26,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { useCart } from "@/components/cart/cart-provider";
 import { DashboardChromeStyles } from "@/components/dashboard/dashboard-chrome-styles";
+import { ClientOnly } from "@/components/shared/client-only";
 import { Brand } from "@/components/shared/ui-kit";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +58,9 @@ type NavItem = {
 const navByRole: Record<UserRole, NavItem[]> = {
   customer: [
     { hash: "overview", label: "Overview", icon: LayoutDashboard },
+    { hash: "cart", label: "Cart", icon: ShoppingCart },
     { hash: "orders", label: "My orders", icon: ClipboardList },
+    { hash: "payments", label: "Payment history", icon: CreditCard },
     { hash: "favorites", label: "Favorites", icon: Heart },
     { hash: "taste-dna", label: "Taste DNA", icon: Sparkles },
     { hash: "profile", label: "Profile", icon: Settings },
@@ -69,6 +74,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     },
     { href: "/dashboard/vendor/menu", label: "My Menu", icon: Pizza },
     { href: "/dashboard/vendor/orders", label: "Orders", icon: ClipboardList },
+    { href: "/dashboard/vendor/payments", label: "Payment history", icon: Receipt },
     { href: "/dashboard/vendor/reviews", label: "Reviews", icon: Star },
     { href: "/dashboard/vendor/profile", label: "Profile", icon: Settings },
     {
@@ -88,6 +94,20 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { hash: "profile", label: "Profile", icon: Settings },
   ],
 };
+
+function CartCountBadge() {
+  const { cart, isCustomer } = useCart();
+  if (!isCustomer || cart.itemCount === 0) return null;
+
+  return (
+    <Badge
+      className="ml-auto bg-primary text-primary-foreground"
+      aria-label={`${cart.itemCount} items in cart`}
+    >
+      {cart.itemCount}
+    </Badge>
+  );
+}
 
 function SidebarContent({
   role,
@@ -130,10 +150,22 @@ function SidebarContent({
             role === "admin" &&
             hash === "orders" &&
             pathname.startsWith(`${hashBasePath}/orders/`);
+          const isCartLink = role === "customer" && hash === "cart";
+          const isStandaloneCartFlow =
+            isCartLink &&
+            (pathname === "/cart" ||
+              pathname === "/checkout" ||
+              pathname.startsWith("/payment/"));
+          const isPaymentsAlias =
+            role === "vendor" &&
+            itemHref === "/dashboard/vendor/payments" &&
+            pathname === "/dashboard/vendor/transactions";
           const active = hash
             ? (pathname === hashBasePath && currentHash === `#${hash}`) ||
-              isAdminOrderDetail
+              isAdminOrderDetail ||
+              isStandaloneCartFlow
             : pathname === itemHref ||
+              isPaymentsAlias ||
               (isVendorSection && pathname.startsWith(`${itemHref}/`));
           const showOrderBadge =
             role === "vendor" &&
@@ -153,6 +185,11 @@ function SidebarContent({
             >
               <Icon className="size-4 shrink-0" aria-hidden="true" />
               <span className="min-w-0 flex-1 truncate">{label}</span>
+              {isCartLink ? (
+                <ClientOnly>
+                  <CartCountBadge />
+                </ClientOnly>
+              ) : null}
               {showOrderBadge ? (
                 <Badge
                   className="ml-auto bg-primary text-primary-foreground"

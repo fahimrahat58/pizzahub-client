@@ -10,11 +10,13 @@ import {
   LogOut,
   Menu,
   Settings,
+  ShoppingCart,
   UserRound,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { useCart } from "@/components/cart/cart-provider";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Brand } from "@/components/shared/ui-kit";
 import {
@@ -118,10 +120,14 @@ function ActiveNavLinkItems({
 }
 
 const roleLinks: Record<UserRole, { href: string; label: string }[]> = {
-  customer: [{ href: "/dashboard/customer#orders", label: "My Orders" }],
+  customer: [
+    { href: "/dashboard/customer#orders", label: "My Orders" },
+    { href: "/dashboard/customer#payments", label: "Payments" },
+  ],
   vendor: [
     { href: "/dashboard/vendor/menu", label: "My Menu" },
     { href: "/dashboard/vendor/orders", label: "Orders" },
+    { href: "/dashboard/vendor/transactions", label: "Transactions" },
   ],
   admin: [
     { href: "/dashboard/admin#users", label: "Manage Users" },
@@ -141,6 +147,7 @@ export function SiteHeader() {
   const { data: session, isPending: sessionPending } = authClient.useSession();
   const role = session?.user ? normalizeRole(session.user.role) : undefined;
   const dashboard = dashboardForRole(role);
+  const { cart, isCustomer } = useCart();
   // Same shared store as the dashboard sidebar; this hook does not add a poller.
   const vendorUnseenOrders = useVendorOrderCount(role === "vendor");
 
@@ -225,6 +232,20 @@ export function SiteHeader() {
 
         <div className="hidden items-center gap-2 md:flex">
           <ThemeToggle />
+          {isCustomer ? (
+            <Link
+              href="/cart"
+              aria-label={`Open cart with ${cart.itemCount} items`}
+              className="relative flex size-9 items-center justify-center rounded-full border border-border/70 text-muted-foreground transition hover:border-orange-500/50 hover:text-foreground"
+            >
+              <ShoppingCart className="size-4" />
+              {cart.itemCount > 0 ? (
+                <Badge className="absolute -top-1.5 -right-1.5 size-4 justify-center rounded-full bg-orange-500 p-0 text-[10px] text-white">
+                  {cart.itemCount}
+                </Badge>
+              ) : null}
+            </Link>
+          ) : null}
           {session?.user ? (
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -306,6 +327,20 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-1 md:hidden">
           <ThemeToggle />
+          {isCustomer ? (
+            <Link
+              href="/cart"
+              aria-label={`Open cart with ${cart.itemCount} items`}
+              className="relative flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+            >
+              <ShoppingCart className="size-5" />
+              {cart.itemCount > 0 ? (
+                <Badge className="absolute -top-0.5 -right-0.5 size-4 justify-center rounded-full bg-orange-500 p-0 text-[10px] text-white">
+                  {cart.itemCount}
+                </Badge>
+              ) : null}
+            </Link>
+          ) : null}
           <Button
             variant="ghost"
             size="icon"

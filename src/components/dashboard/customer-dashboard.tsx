@@ -4,12 +4,15 @@ import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { CheckCircle2, ClipboardList, Heart, Loader2 } from "lucide-react";
 
+import { CartPanel } from "@/components/cart/cart-panel";
 import { ChartCard } from "@/components/dashboard/chart-card";
 import { DashboardOverviewSkeleton } from "@/components/dashboard/dashboard-overview-skeleton";
 import { OrderCard } from "@/components/dashboard/order-card";
+import { PaymentHistory } from "@/components/payments/payment-history";
 import { ProfilePanel } from "@/components/dashboard/profile-panel";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { PizzaCard } from "@/components/public/cards";
+import { ClientOnly } from "@/components/shared/client-only";
 import { EmptyState, ErrorState, LinkButton, PageHeader } from "@/components/shared/ui-kit";
 import { apiFetch } from "@/lib/api";
 import type {
@@ -22,12 +25,14 @@ import type {
 import { cn } from "@/lib/utils";
 import { useHashTab } from "@/lib/use-hash-tab";
 
-const TABS = ["overview", "orders", "favorites", "taste-dna", "profile"] as const;
+const TABS = ["overview", "cart", "orders", "payments", "favorites", "taste-dna", "profile"] as const;
 type Tab = (typeof TABS)[number];
 
 const tabLabels: Record<Tab, string> = {
   overview: "Overview",
+  cart: "Cart",
   orders: "My orders",
+  payments: "Payment history",
   favorites: "Favorites",
   "taste-dna": "Taste DNA",
   profile: "Profile",
@@ -100,7 +105,19 @@ export function CustomerDashboard() {
         ))}
       </div>
 
-      {loading ? (
+      {tab === "cart" ? (
+        <ClientOnly
+          fallback={
+            <div className="flex items-center justify-center py-24 text-sm text-muted-foreground">
+              <Loader2 className="mr-2 size-5 animate-spin" /> Loading your cart...
+            </div>
+          }
+        >
+          <CartPanel embedded />
+        </ClientOnly>
+      ) : tab === "payments" ? (
+        <PaymentHistory />
+      ) : loading ? (
         <DashboardOverviewSkeleton />
       ) : error ? (
         <ErrorState message={error} onRetry={() => void load()} />

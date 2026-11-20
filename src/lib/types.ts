@@ -12,6 +12,9 @@ export type SubscriptionStatus =
   | "paused"
   | "none";
 
+export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
+export type PaymentType = "customer_order" | "vendor_subscription";
+
 export type OrderStatus =
   | "pending"
   | "accepted"
@@ -161,6 +164,62 @@ export interface RestaurantDto {
   updatedAt: string;
 }
 
+export interface CartItemDto {
+  menuItemId: string;
+  name: string;
+  image: string;
+  unitPrice: number;
+  quantity: number;
+  lineTotal: number;
+  vendorId: string;
+  vendorName: string;
+  restaurantId: string | null;
+  restaurantName: string | null;
+}
+
+export interface CartDto {
+  items: CartItemDto[];
+  itemCount: number;
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  currency: string;
+  restaurantId: string | null;
+  restaurantName: string | null;
+}
+
+export interface CartResponse {
+  success: boolean;
+  message?: string;
+  cart: CartDto;
+}
+
+export interface CheckoutResponse {
+  success: boolean;
+  message: string;
+  checkoutUrl: string | null;
+  sessionId: string;
+  paymentStatus: PaymentStatus;
+  order: OrderDto;
+}
+
+export interface CheckoutStatusResponse {
+  success: boolean;
+  paymentStatus: PaymentStatus;
+  stripePaymentStatus: string;
+  stripeSessionStatus: string;
+  order: OrderDto;
+}
+
+export interface RefundRecordDto {
+  id: string;
+  stripeRefundId: string;
+  amount: number;
+  currency: string;
+  reason: string | null;
+  createdAt: string;
+}
+
 export interface TimelineEntry {
   status: OrderStatus;
   note?: string;
@@ -190,6 +249,24 @@ export interface OrderDto {
     restaurantName?: string | null;
   };
   restaurantName: string | null;
+  restaurantId?: string | null;
+  items?: {
+    menuItemId: string;
+    name: string;
+    image: string;
+    unitPrice: number;
+    quantity: number;
+    lineTotal: number;
+    restaurantName?: string | null;
+  }[];
+  subtotal?: number;
+  deliveryFee?: number;
+  totalAmount?: number;
+  currency?: string;
+  paymentMethod?: "stripe" | null;
+  paymentStatus?: PaymentStatus | null;
+  stripeSessionId?: string | null;
+  stripePaymentIntentId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -291,22 +368,70 @@ export interface AdminStats {
   approvedMenuItems: number;
   totalOrders: number;
   totalTransactions: number;
+  totalOrderPayments?: number;
+  orderPaymentRevenue?: number;
 }
 
 export interface TransactionDto {
   id: string;
+  paymentType: PaymentType;
   vendorId: string;
   vendorName: string;
   vendorEmail: string;
-  plan: SubscriptionPlan;
+  customerId: string | null;
+  customerName: string | null;
+  customerEmail: string | null;
+  /** Masked contact detail safe to show to a vendor. */
+  customerReference: string | null;
+  restaurantId: string | null;
+  restaurantName: string | null;
+  orderId: string | null;
+  orderNumber: string | null;
+  orderCreatedAt: string | null;
+  orderStatus: OrderStatus | null;
+  plan: SubscriptionPlan | null;
   billingInterval?: BillingInterval | null;
   amount: number;
   currency: string;
-  status: SubscriptionStatus;
+  status: SubscriptionStatus | PaymentStatus;
+  paymentStatus: PaymentStatus | null;
+  paymentMethod: "stripe" | null;
   stripeEventId: string;
+  stripeInvoiceId: string | null;
+  stripeSessionId: string | null;
+  stripePaymentIntentId: string | null;
   stripeSubscriptionId: string | null;
   description: string | null;
+  refundedAmount: number;
+  refunds: RefundRecordDto[];
   createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentSummary {
+  total: number;
+  customerOrders: number;
+  subscriptions: number;
+  paidCount: number;
+  pendingCount: number;
+  failedCount: number;
+  refundedCount: number;
+  paidAmount: number;
+  refundedAmount: number;
+  currency: string;
+}
+
+export interface PaymentListResponse {
+  success: boolean;
+  transactions: TransactionDto[];
+  pagination: Pagination;
+  summary?: PaymentSummary;
+}
+
+export interface TransactionDetailResponse {
+  success: boolean;
+  transaction: TransactionDto;
+  message?: string;
 }
 
 export interface AdminDashboardResponse {

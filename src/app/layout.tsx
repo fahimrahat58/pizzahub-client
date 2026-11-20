@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Toaster } from "sonner";
 
 import { SessionSync } from "@/components/auth/session-sync";
+import { CartProvider } from "@/components/cart/cart-provider";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { ThemeProvider } from "@/components/theme/theme-provider";
@@ -36,9 +37,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col">
         <ThemeProvider>
           <SessionSync />
-          <SiteHeader />
-          <div className="flex flex-1 flex-col">{children}</div>
-          <SiteFooter />
+          <CartProvider>
+            <SiteHeader />
+            <div className="flex flex-1 flex-col">{children}</div>
+            <SiteFooter />
+          </CartProvider>
           <Toaster position="top-right" richColors closeButton />
         </ThemeProvider>
       </body>
