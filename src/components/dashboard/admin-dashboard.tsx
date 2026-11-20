@@ -14,7 +14,7 @@ import { toast } from "sonner";
 
 import { AdminReviewsPanel } from "@/components/dashboard/admin-reviews-panel";
 import { AdminTransactionsPanel } from "@/components/dashboard/admin-transactions-panel";
-import { ChartCard } from "@/components/dashboard/chart-card";
+import { ChartCard, orderStatusChartColor } from "@/components/dashboard/chart-card";
 import { DashboardOverviewSkeleton } from "@/components/dashboard/dashboard-overview-skeleton";
 import { OrderCard } from "@/components/dashboard/order-card";
 import { ProfilePanel } from "@/components/dashboard/profile-panel";
@@ -106,6 +106,9 @@ export function AdminDashboard() {
   const [menuItems, setMenuItems] = useState<MenuItemDto[]>([]);
   const [menuSearchInput, setMenuSearchInput] = useState("");
   const [menuSearch, setMenuSearch] = useState("");
+  const [menuStatus, setMenuStatus] = useState<"all" | "pending" | "approved" | "rejected">(
+    "all",
+  );
   const [orders, setOrders] = useState<OrderDto[]>([]);
   const [coreLoading, setCoreLoading] = useState(true);
   const [coreError, setCoreError] = useState("");
@@ -117,6 +120,7 @@ export function AdminDashboard() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | UserRole>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "blocked">("all");
   const [userPage, setUserPage] = useState(1);
 
   const [billingVendors, setBillingVendors] = useState<UserDto[]>([]);
@@ -147,6 +151,7 @@ export function AdminDashboard() {
     try {
       const menuParams = new URLSearchParams({ limit: "50" });
       if (menuSearch.trim()) menuParams.set("search", menuSearch.trim());
+      if (menuStatus !== "all") menuParams.set("status", menuStatus);
       const [statsData, menuData, orderData, summaryData] = await Promise.all([
         apiFetch<AdminStatsPayload>("/api/admin/stats"),
         apiFetch<ListResponse<MenuItemDto>>(`/api/menu/admin/all?${menuParams}`),
@@ -162,7 +167,7 @@ export function AdminDashboard() {
     } finally {
       setCoreLoading(false);
     }
-  }, [menuSearch]);
+  }, [menuSearch, menuStatus]);
 
   const loadUsers = useCallback(async () => {
     setUsersLoading(true);
@@ -174,6 +179,7 @@ export function AdminDashboard() {
       });
       if (search.trim()) params.set("search", search.trim());
       if (roleFilter !== "all") params.set("role", roleFilter);
+      if (statusFilter !== "all") params.set("status", statusFilter);
       const data = await apiFetch<{
         success: boolean;
         users: UserDto[];
@@ -186,7 +192,7 @@ export function AdminDashboard() {
     } finally {
       setUsersLoading(false);
     }
-  }, [roleFilter, search, userPage]);
+  }, [roleFilter, statusFilter, search, userPage]);
 
   const loadBilling = useCallback(async () => {
     setBillingLoading(true);
@@ -204,6 +210,17 @@ export function AdminDashboard() {
       setBillingLoading(false);
     }
   }, [billingSearch]);
+
+  // Keep the users list responsive while typing without a request per keystroke.
+  useEffect(() => {
+    const trimmed = searchInput.trim();
+    if (trimmed === search) return;
+    const timer = window.setTimeout(() => {
+      setSearch(trimmed);
+      setUserPage(1);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [search, searchInput]);
 
   const openBillingHistory = async (vendor: UserDto) => {
     setHistoryLoading(true);
@@ -410,28 +427,15 @@ export function AdminDashboard() {
             ))}
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-            <ChartCard
-              title="Order activity"
-              description="Orders placed across PizzaHub over the last 7 days."
-              data={charts?.orderTrend ?? []}
-              variant="line"
-              emptyMessage="No orders in the last 7 days"
-            />
+          <div className="grid gap-6 md:grid-cols-2">
             <ChartCard
               title="Order status"
               description="All platform orders by current status."
               data={charts?.orderStatus ?? []}
               variant="donut"
+              colorForPoint={orderStatusChartColor}
+              showEmptyData
               emptyMessage="No orders yet"
-            />
-            <ChartCard
-              title="Order value"
-              description="Value of orders placed over the last 7 days."
-              data={charts?.orderValueTrend ?? []}
-              variant="line"
-              formatValue={(value) => `$${value.toFixed(2)}`}
-              emptyMessage="No order value yet"
             />
             <ChartCard
               title="New accounts"
@@ -529,14 +533,34 @@ export function AdminDashboard() {
                 onChange={(event) => setMenuSearchInput(event.target.value)}
               />
             </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="menuStatusFilter">Status</Label>
+              <Select
+                value={menuStatus}
+                onValueChange={(value) =>
+                  setMenuStatus(value as "all" | "pending" | "approved" | "rejected")
+                }
+              >
+                <SelectTrigger id="menuStatusFilter" className="w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <Button type="submit">Search</Button>
-            {menuSearch ? (
+            {menuSearch || menuStatus !== "all" ? (
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => {
                   setMenuSearchInput("");
                   setMenuSearch("");
+                  setMenuStatus("all");
                 }}
               >
                 Clear
@@ -558,10 +582,10 @@ export function AdminDashboard() {
           ) : (
             <EmptyState
               icon={<Pizza className="size-5" />}
-              title={menuSearch ? "No matching menu items" : "No menu items yet"}
+              title={menuSearch || menuStatus !== "all" ? "No matching menu items" : "No menu items yet"}
               description={
-                menuSearch
-                  ? "Try a different name, category, or location."
+                menuSearch || menuStatus !== "all"
+                  ? "Try a different search or status filter."
                   : "Pizzas submitted by vendors will appear here."
               }
             />
@@ -606,7 +630,41 @@ export function AdminDashboard() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="userStatusFilter">Status</Label>
+              <Select
+                value={statusFilter}
+                onValueChange={(value) => {
+                  setStatusFilter(value as "all" | "active" | "blocked");
+                  setUserPage(1);
+                }}
+              >
+                <SelectTrigger id="userStatusFilter" className="w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="blocked">Blocked</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <Button type="submit">Search</Button>
+            {searchInput || search || roleFilter !== "all" || statusFilter !== "all" ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setSearchInput("");
+                  setSearch("");
+                  setRoleFilter("all");
+                  setStatusFilter("all");
+                  setUserPage(1);
+                }}
+              >
+                Clear
+              </Button>
+            ) : null}
           </form>
 
           {usersLoading ? (
@@ -678,7 +736,10 @@ export function AdminDashboard() {
               })}
             </div>
           ) : (
-            <EmptyState title="No users found" description="Try a different search or role filter." />
+            <EmptyState
+              title="No users found"
+              description="Try a different search, role, or status filter."
+            />
           )}
 
           {usersPagination && usersPagination.pages > 1 ? (

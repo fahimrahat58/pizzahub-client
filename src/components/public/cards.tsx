@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Crown, Heart, MapPin, Star, UtensilsCrossed } from "lucide-react";
 import { toast } from "sonner";
 
@@ -9,6 +10,8 @@ import { AddToCartButton } from "@/components/cart/add-to-cart-button";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api";
+import { authClient } from "@/lib/auth-client";
+import { loginWithReturn } from "@/lib/safe-return";
 import type { MenuItemDto, RestaurantDto } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -86,6 +89,9 @@ export function PizzaCard({
   favorite?: boolean;
   onChanged?: () => void;
 }) {
+  const router = useRouter();
+  const { data: session, isPending: sessionPending } = authClient.useSession();
+
   return (
     <article className="card-hover group flex h-full flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
       <Link href={`/menu/${item.id}`} className="block">
@@ -165,6 +171,12 @@ export function PizzaCard({
         <div className="mt-auto flex gap-2 pt-2">
           <Link
             href={`/menu/${item.id}`}
+            onClick={(event) => {
+              if (!sessionPending && !session?.user) {
+                event.preventDefault();
+                router.push(loginWithReturn(`/menu/${item.id}`));
+              }
+            }}
             className={cn(buttonVariants({ variant: "outline", size: "sm" }), "flex-1")}
           >
             View Details

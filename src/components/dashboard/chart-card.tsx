@@ -11,6 +11,20 @@ export type ChartVariant = "bar" | "line" | "donut";
 
 const chartColor = (index: number) => `var(--chart-${(index % 5) + 1})`;
 
+/** Status colours match the order-status badges in shared/ui-kit.tsx. */
+const ORDER_STATUS_CHART_COLORS: Record<string, string> = {
+  Pending: "var(--color-amber-500)",
+  Accepted: "var(--color-sky-500)",
+  Preparing: "var(--color-violet-500)",
+  "Out for delivery": "var(--color-blue-500)",
+  Delivered: "var(--color-emerald-500)",
+  Cancelled: "var(--color-rose-500)",
+  Rejected: "var(--color-rose-700)",
+};
+
+export const orderStatusChartColor = (label: string, index: number): string =>
+  ORDER_STATUS_CHART_COLORS[label] ?? chartColor(index);
+
 export function ChartCard({
   title,
   description,
@@ -18,6 +32,8 @@ export function ChartCard({
   variant = "bar",
   formatValue = (value) => String(value),
   emptyMessage = "No data yet",
+  colorForPoint,
+  showEmptyData = false,
   className,
 }: {
   title: string;
@@ -26,6 +42,8 @@ export function ChartCard({
   variant?: ChartVariant;
   formatValue?: (value: number) => string;
   emptyMessage?: string;
+  colorForPoint?: (label: string, index: number) => string;
+  showEmptyData?: boolean;
   className?: string;
 }) {
   const max = Math.max(...data.map((point) => point.value), 1);
@@ -33,8 +51,10 @@ export function ChartCard({
   const summary = data
     .map((point) => `${point.label}: ${formatValue(point.value)}`)
     .join(", ");
+  const pointColor = (label: string, index: number) =>
+    colorForPoint ? colorForPoint(label, index) : chartColor(index);
 
-  if (!data.length || total === 0) {
+  if (!data.length || (total === 0 && !showEmptyData)) {
     return (
       <Card className={cn("min-w-0", className)}>
         <CardHeader className="space-y-1">
@@ -59,10 +79,13 @@ export function ChartCard({
   const donutSegments = data.map((point, index) => ({
     point,
     index,
-    percent: (point.value / total) * 100,
-    offset: data
-      .slice(0, index)
-      .reduce((sum, previous) => sum + (previous.value / total) * 100, 0),
+    percent: total > 0 ? (point.value / total) * 100 : 0,
+    offset:
+      total > 0
+        ? data
+            .slice(0, index)
+            .reduce((sum, previous) => sum + (previous.value / total) * 100, 0)
+        : 0,
   }));
 
   return (
@@ -178,7 +201,7 @@ export function ChartCard({
                       cy="21"
                       r="15.915"
                       fill="none"
-                      stroke={chartColor(index)}
+                      stroke={pointColor(point.label, index)}
                       strokeWidth="6"
                       pathLength={100}
                       strokeDasharray={`${percent} ${100 - percent}`}
@@ -196,7 +219,7 @@ export function ChartCard({
                   <li key={point.label} className="flex items-center gap-2">
                     <span
                       className="size-2.5 shrink-0 rounded-full"
-                      style={{ backgroundColor: chartColor(index) }}
+                      style={{ backgroundColor: pointColor(point.label, index) }}
                       aria-hidden="true"
                     />
                     <span className="min-w-0 flex-1 truncate text-muted-foreground">

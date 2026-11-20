@@ -12,7 +12,7 @@ import {
   Store,
 } from "lucide-react";
 
-import { ChartCard } from "@/components/dashboard/chart-card";
+import { ChartCard, orderStatusChartColor } from "@/components/dashboard/chart-card";
 import { DashboardOverviewSkeleton } from "@/components/dashboard/dashboard-overview-skeleton";
 import { StatCard } from "@/components/dashboard/stat-card";
 import {
@@ -43,6 +43,7 @@ import type {
 
 export function VendorOverview() {
   const [menu, setMenu] = useState<MenuItemDto[]>([]);
+  const [totalMenuItems, setTotalMenuItems] = useState(0);
   const [orders, setOrders] = useState<OrderDto[]>([]);
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
   const [subscription, setSubscription] = useState<SubscriptionStatusDto | null>(null);
@@ -69,6 +70,7 @@ export function VendorOverview() {
           apiFetch<DashboardSummaryResponse>("/api/dashboard/summary"),
         ]);
       setMenu(menuData.items);
+      setTotalMenuItems(menuData.pagination?.total ?? menuData.items.length);
       setOrders(orderData.orders);
       setSummary(summaryData.summary);
       setRestaurants(
@@ -143,6 +145,7 @@ export function VendorOverview() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard label="Restaurants" value={summary.stats.totalRestaurants ?? restaurants.length} icon={Store} />
+        <StatCard label="Total Menu Items" value={totalMenuItems} icon={Pizza} />
         <StatCard label="Active menu items" value={summary.stats.activeMenuItems ?? 0} icon={Pizza} />
         <StatCard label="Total orders" value={summary.stats.totalOrders} icon={ClipboardList} />
         <StatCard label="Pending orders" value={summary.stats.pendingOrders} icon={Loader2} />
@@ -179,7 +182,7 @@ export function VendorOverview() {
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2">
         <ChartCard
           title="Order activity"
           description="Orders received over the last 7 days."
@@ -192,15 +195,9 @@ export function VendorOverview() {
           description="All of your orders by current status."
           data={summary.charts.orderStatus}
           variant="donut"
+          colorForPoint={orderStatusChartColor}
+          showEmptyData
           emptyMessage="No orders yet"
-        />
-        <ChartCard
-          title="Order value"
-          description="Value of orders received over the last 7 days."
-          data={summary.charts.orderValueTrend ?? []}
-          variant="line"
-          formatValue={(value) => `$${value.toFixed(2)}`}
-          emptyMessage="No order value yet"
         />
       </div>
 
