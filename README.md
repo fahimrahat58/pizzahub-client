@@ -321,7 +321,7 @@ Before running the project, make sure you have:
 ### 1. Clone the Repository
 
 ```bash
-git clone <CLIENT_REPOSITORY_URL>
+git clone <https://github.com/fahimrahat58/pizzahub-client>
 cd pizzahub-client
 ```
 
@@ -478,8 +478,8 @@ Payment processing and webhook verification are handled by the backend.
 | Resource | Link |
 |---|---|
 | **Live Website** | [PizzaHub](https://pizzahub-mocha.vercel.app/) |
-| **Client Repository** | `<CLIENT_REPOSITORY_URL>` |
-| **Server Repository** | `<SERVER_REPOSITORY_URL>` |
+| **Client Repository** | `https://github.com/fahimrahat58/pizzahub-client` |
+| **Server Repository** | `https://github.com/fahimrahat58/pizzahub-server` |
 
 ---
 
