@@ -282,7 +282,7 @@ export function SiteHeader() {
                   ) : (
                     <LogOut />
                   )}
-                  {signingOut ? "Signing out..." : "Logout"}
+                  {signingOut ? "Logging out..." : "Logout"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -388,7 +388,7 @@ export function SiteHeader() {
                   ) : (
                     <LogOut className="size-4" aria-hidden="true" />
                   )}
-                  {signingOut ? "Signing out..." : "Logout"}
+                  {signingOut ? "Logging out..." : "Logout"}
                 </button>
               </>
             ) : (
