@@ -10,6 +10,7 @@ async function DashboardAuth({ children }: { children: ReactNode }) {
     <DashboardShell
       role={session.user.role as UserRole}
       userName={session.user.name || session.user.email}
+      userImage={session.user.image ?? null}
     >
       {children}
     </DashboardShell>

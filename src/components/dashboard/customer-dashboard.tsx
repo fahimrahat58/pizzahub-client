@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { CheckCircle2, ClipboardList, Heart, Loader2 } from "lucide-react";
 
 import { CartPanel } from "@/components/cart/cart-panel";
-import { ChartCard } from "@/components/dashboard/chart-card";
+import { ChartCard, orderStatusChartColor } from "@/components/dashboard/chart-card";
 import { DashboardOverviewSkeleton } from "@/components/dashboard/dashboard-overview-skeleton";
 import { OrderCard } from "@/components/dashboard/order-card";
 import { PaymentHistory } from "@/components/payments/payment-history";
@@ -163,6 +163,8 @@ export function CustomerDashboard() {
               description="All of your orders by current status."
               data={summary.charts.orderStatus}
               variant="donut"
+              colorForPoint={orderStatusChartColor}
+              showEmptyData
               emptyMessage="No orders yet"
             />
           </div>

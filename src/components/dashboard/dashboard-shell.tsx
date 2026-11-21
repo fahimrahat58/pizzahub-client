@@ -109,9 +109,30 @@ function CartCountBadge() {
   );
 }
 
+function SidebarAvatar({ image, name }: { image: string | null; name: string }) {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  return (
+    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
+      {image && !imageFailed ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={image}
+          alt=""
+          className="size-full rounded-full object-cover"
+          onError={() => setImageFailed(true)}
+        />
+      ) : (
+        name.slice(0, 1).toUpperCase()
+      )}
+    </div>
+  );
+}
+
 function SidebarContent({
   role,
   name,
+  image,
   pathname,
   currentHash,
   hashBasePath,
@@ -122,6 +143,7 @@ function SidebarContent({
 }: {
   role: UserRole;
   name: string;
+  image: string | null;
   pathname: string;
   currentHash: string;
   hashBasePath: string;
@@ -205,9 +227,7 @@ function SidebarContent({
 
       <div className="shrink-0 space-y-3 border-t border-sidebar-border px-4 py-4">
         <div className="flex items-center gap-3 rounded-lg bg-sidebar-accent/50 p-3">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
-            {name.slice(0, 1).toUpperCase()}
-          </div>
+          <SidebarAvatar key={image ?? "no-image"} image={image} name={name} />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{name}</p>
             <Badge variant="outline" className="mt-0.5 capitalize text-[10px]">
@@ -241,10 +261,12 @@ function SidebarContent({
 export function DashboardShell({
   role,
   userName,
+  userImage,
   children,
 }: {
   role: UserRole;
   userName: string;
+  userImage: string | null;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -332,6 +354,7 @@ export function DashboardShell({
         <SidebarContent
           role={safeRole}
           name={safeName}
+          image={userImage}
           pathname={pathname}
           currentHash={currentHash}
           hashBasePath={hashBasePath}
@@ -367,6 +390,7 @@ export function DashboardShell({
           <SidebarContent
             role={safeRole}
             name={safeName}
+            image={userImage}
             pathname={pathname}
             currentHash={currentHash}
             hashBasePath={hashBasePath}
