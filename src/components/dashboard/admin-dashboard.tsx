@@ -297,7 +297,7 @@ export function AdminDashboard() {
         },
       );
       toast.success(
-        response.message ?? (item.isActive ? "Menu item deactivated" : "Menu item activated"),
+        item.isActive ? "Pizza deactivated" : response.message ?? "Menu item activated",
       );
       await refresh();
     } catch (error) {
@@ -1066,8 +1066,13 @@ function ModerationCard({
   const isRejected = item.approvalStatus === "rejected";
   const isApproved = item.approvalStatus === "approved";
   const needsReview = isPending || isRejected;
+  const highlightClass = isRejected
+    ? "bg-destructive/5 ring-destructive/30"
+    : isApproved && !item.isActive
+      ? "bg-amber-500/5 ring-amber-500/30"
+      : undefined;
   return (
-    <Card className="overflow-hidden">
+    <Card className={`overflow-hidden${highlightClass ? ` ${highlightClass}` : ""}`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={item.image} alt={item.name} className="aspect-video w-full object-cover" />
       <CardContent className="space-y-3 py-4">
