@@ -210,11 +210,6 @@ export function HomeContent() {
                 alt="Freshly baked pizza"
                 className="size-full object-cover"
               />
-              <div className="absolute right-4 bottom-4 left-4 rounded-2xl border border-white/20 bg-black/60 p-4 text-white backdrop-blur-md">
-                <p className="text-xs uppercase tracking-widest text-orange-300">Today&apos;s pick</p>
-                <p className="mt-1 text-lg font-semibold">Truffle Mushroom Special</p>
-                <p className="text-sm text-white/70">From our featured kitchens</p>
-              </div>
             </div>
           </Reveal>
         </div>

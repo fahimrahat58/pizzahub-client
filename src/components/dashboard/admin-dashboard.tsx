@@ -285,6 +285,28 @@ export function AdminDashboard() {
     }
   };
 
+  const toggleMenuActive = async (item: MenuItemDto) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const response = await apiFetch<{ message?: string }>(
+        `/api/menu/admin/${item.id}/approval`,
+        {
+          method: "PATCH",
+          body: { approvalStatus: "approved", isActive: !item.isActive },
+        },
+      );
+      toast.success(
+        response.message ?? (item.isActive ? "Menu item deactivated" : "Menu item activated"),
+      );
+      await refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update menu item");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const deleteMenuItem = async () => {
     if (!deleteMenuItemTarget) return;
     setBusy(true);
@@ -503,6 +525,7 @@ export function AdminDashboard() {
                     key={item.id}
                     item={item}
                     onDecide={openDecision}
+                    onToggleActive={(menuItem) => void toggleMenuActive(menuItem)}
                     onDelete={setDeleteMenuItemTarget}
                   />
                 ))}
@@ -575,6 +598,7 @@ export function AdminDashboard() {
                   key={item.id}
                   item={item}
                   onDecide={openDecision}
+                  onToggleActive={(menuItem) => void toggleMenuActive(menuItem)}
                   onDelete={setDeleteMenuItemTarget}
                 />
               ))}
@@ -921,7 +945,11 @@ export function AdminDashboard() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {decision?.action === "restore" ? "Restore menu item" : "Hide menu item"}
+              {decision?.action === "restore"
+                ? decision.item.approvalStatus === "pending"
+                  ? "Approve menu item"
+                  : "Restore menu item"
+                : "Reject menu item"}
             </DialogTitle>
             <DialogDescription>
               {decision
@@ -951,7 +979,11 @@ export function AdminDashboard() {
               onClick={() => void submitDecision()}
             >
               {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-              {decision?.action === "restore" ? "Restore" : "Hide"}
+              {decision?.action === "restore"
+                ? decision.item.approvalStatus === "pending"
+                  ? "Approve"
+                  : "Restore"
+                : "Reject"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1022,13 +1054,18 @@ export function AdminDashboard() {
 function ModerationCard({
   item,
   onDecide,
+  onToggleActive,
   onDelete,
 }: {
   item: MenuItemDto;
   onDecide: (item: MenuItemDto, action: MenuDecision["action"]) => void;
+  onToggleActive: (item: MenuItemDto) => void;
   onDelete: (item: MenuItemDto) => void;
 }) {
-  const isHidden = !item.isActive || item.approvalStatus === "rejected";
+  const isPending = item.approvalStatus === "pending";
+  const isRejected = item.approvalStatus === "rejected";
+  const isApproved = item.approvalStatus === "approved";
+  const needsReview = isPending || isRejected;
   return (
     <Card className="overflow-hidden">
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1050,11 +1087,22 @@ function ModerationCard({
         <div className="flex flex-wrap gap-2">
           <Button
             size="sm"
-            variant={isHidden ? "default" : "outline"}
-            onClick={() => onDecide(item, isHidden ? "restore" : "hide")}
+            variant={needsReview || !item.isActive ? "default" : "outline"}
+            onClick={() => (isApproved ? onToggleActive(item) : onDecide(item, "restore"))}
           >
-            {isHidden ? "Restore" : "Hide"}
+            {isPending
+              ? "Approve"
+              : isRejected
+                ? "Restore"
+                : item.isActive
+                  ? "Deactivate"
+                  : "Activate"}
           </Button>
+          {isRejected ? null : (
+            <Button size="sm" variant="secondary" onClick={() => onDecide(item, "hide")}>
+              Reject
+            </Button>
+          )}
           <Button size="sm" variant="destructive" onClick={() => onDelete(item)}>
             Delete
           </Button>

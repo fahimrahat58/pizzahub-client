@@ -91,7 +91,7 @@ export function VendorMenuPage() {
         method: "PATCH",
         body: { isActive: !item.isActive },
       });
-      toast.success(item.isActive ? "Pizza unpublished" : "Pizza published");
+      toast.success(item.isActive ? "Pizza marked unavailable" : "Pizza marked available");
       await load();
     } catch (toggleError) {
       toast.error(
@@ -169,14 +169,17 @@ export function VendorMenuPage() {
       ) : items.length ? (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {items.map((item) => (
-            <Card key={item.id}>
+            <Card
+              key={item.id}
+              className={item.isActive ? undefined : "bg-amber-500/5 ring-amber-500/30"}
+            >
               <div className="relative aspect-[4/3] bg-muted">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={item.image} alt={item.name} className="size-full object-cover" />
                 <div className="absolute top-2 left-2 flex flex-wrap gap-1.5">
                   <ApprovalBadge status={item.approvalStatus} />
                   <Badge variant="outline" className="bg-background/80">
-                    {item.isActive ? "Published" : "Unpublished"}
+                    {item.isActive ? "Available" : "Unavailable"}
                   </Badge>
                 </div>
               </div>
@@ -219,7 +222,7 @@ export function VendorMenuPage() {
                     }
                     onClick={() => void toggleActive(item)}
                   >
-                    {item.isActive ? "Unpublish" : "Publish"}
+                    {item.isActive ? "Mark unavailable" : "Mark available"}
                   </Button>
                   <Button size="sm" variant="destructive" onClick={() => setDeleting(item)}>
                     <Trash2 className="size-3.5" /> Delete
